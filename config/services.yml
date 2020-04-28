@@ -1,0 +1,28 @@
+imports:
+    - { resource: services/*.yml }
+
+services:
+    doctrine.factory.entity_manager:
+        class: RestOnPhp\Factory\DoctrineEntityManagerFactory
+        arguments: [  ]
+
+    doctrine.orm.entity_manager:
+        class: Doctrine\ORM\EntityManager
+        factory: [ '@doctrine.factory.entity_manager', create]
+        arguments:
+            - '%database_host%'
+            - '%database_port%'
+            - '%database_name%'
+            - '%database_user%'
+            - '%database_password%'
+            - '%project_dir%/config'
+            - '%cache_dir%'
+            - '%entity_namespace%'
+
+    api.session.storage:
+        class: RestOnPhp\Session\JwtSessionStorage
+        public: true
+
+    api.metadata.xml:
+        class: RestOnPhp\Metadata\XmlMetadata
+        arguments: [ '%config_dir%/resources.xml', '%cache_dir%' ]

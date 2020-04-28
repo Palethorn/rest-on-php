@@ -1,0 +1,53 @@
+    <xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://morescreens.tv/schemas/api/mapping"
+    xmlns:api="http://morescreens.tv/schemas/api/mapping"
+    elementFormDefault="qualified">
+    <xs:element name="mapping">
+        <xs:complexType>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="resource" type="api:resource" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="resource" >
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="field" type="api:field" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="route" type="api:route" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:choice>
+        <xs:attribute name="entity"></xs:attribute>
+        <xs:attribute name="name"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="field">
+        <xs:attribute name="name"></xs:attribute>
+        <xs:attribute name="type"></xs:attribute>
+        <xs:attribute name="filter-type" type="api:filter-type" default="exact"></xs:attribute>
+        <xs:attribute name="id" type="xs:boolean" default="false"></xs:attribute>
+        <xs:attribute name="normalizable" type="xs:boolean" default="false"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="route">
+        <xs:attribute name="name"></xs:attribute>
+        <xs:attribute name="method" type="api:method"></xs:attribute>
+        <xs:attribute name="path"></xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="method">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="GET"></xs:enumeration>
+            <xs:enumeration value="POST"></xs:enumeration>
+            <xs:enumeration value="PUT"></xs:enumeration>
+            <xs:enumeration value="PATCH"></xs:enumeration>
+            <xs:enumeration value="DELETE"></xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="filter-type">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="exact"></xs:enumeration>
+            <xs:enumeration value="partial"></xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

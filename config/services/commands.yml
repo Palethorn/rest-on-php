@@ -1,0 +1,6 @@
+services:
+    api.command.clear_cache:
+        class: RestOnPhp\Command\ClearCacheCommand
+        calls:
+            - ['setCacheDir', [ '%cache_dir%' ]]
+        tags: [ 'command' ]

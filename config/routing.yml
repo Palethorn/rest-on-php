@@ -1,0 +1,24 @@
+auth:
+    path: /login
+    methods: POST
+    controller: api.handler.auth
+
+docs:
+    path: /docs.json
+    methods: GET
+    controller: api.handler.docs
+
+collection:
+    path: '/{resource}'
+    methods: GET
+    controller: api.handler.collection
+
+item:
+    path: '/{resource}/{id}'
+    methods: [ GET, PUT, PATCH, DELETE ]
+    controller: api.handler.item
+
+item_create:
+    path: '/{resource}'
+    methods: POST
+    controller: api.handler.item
