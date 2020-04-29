@@ -1,6 +1,5 @@
 {
     "name": "palethorn/rest-on-php",
-    "version": "0.0.1",
     "license": "MIT",
     "description": "Rest framework built on symfony components",
     "type": "library",
