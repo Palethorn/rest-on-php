@@ -30,7 +30,7 @@ class XmlMetadata {
         }
 
         $this->xpath = new \DOMXPath($this->metadata);
-        $this->xpath->registerNamespace('ns', 'http://morescreens.tv/schemas/api/mapping');
+        $this->xpath->registerNamespace('ns', 'urn:rest-on-php');
 
         $parsed = [];
         $resources = $this->xpath->query('//ns:mapping/ns:resource');
@@ -124,6 +124,8 @@ class XmlMetadata {
     }
 
     public function getMetadataFor($entityClass) {
+        $entityClass = str_replace('Proxy\\__CG__\\', '', $entityClass);
+
         if(!isset($this->metadata[$entityClass])) {
             throw new ResourceNotFoundException(sprintf('Resource of type %s doesn\'t exist.', $entityClass));
         }

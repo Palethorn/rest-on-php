@@ -4,6 +4,7 @@ namespace RestOnPhp\Normalizer;
 
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
+use RestOnPhp\Utils;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\CacheableSupportsMethodInterface;
@@ -32,9 +33,9 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
         $metadata = $this->metadata->getMetadataFor(get_class($object));
 
         foreach($metadata['fields'] as $field) {
-            $getter = 'get' . ucfirst($field['name']);
+            $getter = 'get' . ucfirst(Utils::camelize($field['name']));
             $value = $object->$getter();
-
+            
             if($value && $field['normalizable']) {
                 $normalized[$field['name']] = $this->relationNormalizer->normalize($value, $format, $context);
             } else {

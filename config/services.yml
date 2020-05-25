@@ -26,3 +26,13 @@ services:
     api.metadata.xml:
         class: RestOnPhp\Metadata\XmlMetadata
         arguments: [ '%config_dir%/resources.xml', '%cache_dir%' ]
+
+    symfony.validator:
+        class: Symfony\Component\Validator\Validator\RecursiveValidator
+        factory: [ '@symfony.validator_builder', getValidator]
+
+    symfony.validator_builder:
+        class: Symfony\Component\Validator\ValidatorBuilder
+        factory: [ 'Symfony\Component\Validator\Validation', createValidatorBuilder]
+        calls:
+            - [addXmlMapping, ['%project_dir%/config/validation.xml']]

@@ -6,7 +6,6 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 
 class DefaultRepository extends EntityRepository {
     public function get($filters = [], $pagination = [], $order = [], $single = false) {
-
         $q = $this->createQueryBuilder('r');
 
         foreach($order as $field => $direction) {

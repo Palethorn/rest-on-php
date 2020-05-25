@@ -1,7 +1,7 @@
-    <xs:schema
+<xs:schema
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    targetNamespace="http://cavar.net/schemas/api/mapping"
-    xmlns:api="http://cavar.net/schemas/api/mapping"
+    targetNamespace="urn:rest-on-php"
+    xmlns:api="urn:rest-on-php"
     elementFormDefault="qualified">
     <xs:element name="mapping">
         <xs:complexType>
