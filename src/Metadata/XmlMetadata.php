@@ -30,7 +30,7 @@ class XmlMetadata {
         }
 
         $this->xpath = new \DOMXPath($this->metadata);
-        $this->xpath->registerNamespace('ns', 'urn:rest-on-php');
+        $this->xpath->registerNamespace('ns', 'urn:mapping');
 
         $parsed = [];
         $resources = $this->xpath->query('//ns:mapping/ns:resource');
