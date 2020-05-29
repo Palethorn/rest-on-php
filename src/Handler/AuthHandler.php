@@ -9,6 +9,7 @@ use Lcobucci\JWT\Signer\Key;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Symfony\Component\Serializer\Serializer;
 
 class AuthHandler {
     private $entityManager;
@@ -16,14 +17,15 @@ class AuthHandler {
     private $signer;
     private $entity;
 
-    public function __construct(EntityManager $entityManager, string $jwtSecret, string $entity) {
-        $this->entityManager = $entityManager;
-        $this->jwtSecret = $jwtSecret;
-        $this->signer = new Sha256();
+    public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity) {
         $this->entity = $entity;
+        $this->signer = new Sha256();
+        $this->jwtSecret = $jwtSecret;
+        $this->serializer = $serializer;
+        $this->entityManager = $entityManager;
     }
 
-    public function handle(Request $request) {
+    public function handle($entityClass = null, Request $request) {
         $content = $request->getContent();
         $params = json_decode($content, true);
 

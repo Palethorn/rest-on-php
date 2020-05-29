@@ -6,7 +6,7 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-class RelationNormalizer implements NormalizerInterface, DenormalizerInterface {
+class RelationNormalizer {
     private $metadata;
     private $entityManager;
 
@@ -15,19 +15,14 @@ class RelationNormalizer implements NormalizerInterface, DenormalizerInterface {
         $this->entityManager = $entityManager;
     }
 
-    public function normalize($object, string $format = null, array $context = []) {
-        $entityClass = str_replace('Proxy\\__CG__\\', '', get_class($object));
+    public function normalize($object, $value) {
+        $entityClass = str_replace('Proxy\\__CG__\\', '', get_class($value));
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $route = $this->metadata->getRouteMetadataFor($entityClass, 'getItem');
         $getter = 'get' . ucfirst($id_field);
-        return str_replace('{id}', $object->$getter(), $route['path']);
+        return $object->$getter();
     }
 
-    public function supportsNormalization($data, string $format = null) {
-        return true;
-    }
-
-    public function denormalize($data, string $type, string $format = null, array $context = []) {
+    public function denormalize($data, string $type) {
         if(!$data) {
             return null;
         }
@@ -44,9 +39,5 @@ class RelationNormalizer implements NormalizerInterface, DenormalizerInterface {
 
         return $object;
 
-    }
-
-    public function supportsDenormalization($data, string $type, string $format = null) {
-        return true;
     }
 }

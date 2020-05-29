@@ -22,10 +22,16 @@ services:
     api.session.storage:
         class: RestOnPhp\Session\JwtSessionStorage
         public: true
+    
+    api.token.extractor:
+        class: RestOnPhp\Token\Extractor
+        public: true
+        arguments: [ '%token_bearer%', '%token_key%' ]
 
     api.metadata.xml:
         class: RestOnPhp\Metadata\XmlMetadata
         arguments: [ '%config_dir%/resources.xml', '%cache_dir%' ]
+        public: true
 
     symfony.validator:
         class: Symfony\Component\Validator\Validator\RecursiveValidator

@@ -38,6 +38,9 @@ class XmlMetadata {
         foreach($resources as $resource) {
             $name = $resource->getAttribute('name');
             $entity = $resource->getAttribute('entity');
+            $id = $resource->getAttribute('id');
+            $secure = $resource->getAttribute('secure');
+            $secure = $secure == 'true' ? true : false;
 
             $routes = [];
             $fields = [];
@@ -58,8 +61,7 @@ class XmlMetadata {
                 $field_name = $field_element->getAttribute('name');
                 $field_type = $field_element->getAttribute('type');
                 $field_id = $field_element->getAttribute('id');
-                $field_normalizable = $field_element->getAttribute('normalizable');
-                $field_normalizable = $field_normalizable && $field_normalizable == 'true' ? true : false;
+                $field_normalizer = $field_element->getAttribute('normalizer');
                 $field_id = $field_id && $field_id == 'true' ? true : false;
                 $field_filter_type = $field_element->getAttribute('filter-type');
                 $field_filter_type = $field_filter_type ? $field_filter_type : 'exact';
@@ -69,13 +71,15 @@ class XmlMetadata {
                     'type' => $field_type,
                     'filter-type' => $field_filter_type,
                     'id' => $field_id,
-                    'normalizable' => $field_normalizable
+                    'normalizer' => $field_normalizer
                 );
             }
 
             $parsed[$entity] = array(
                 'name' => $name,
                 'entity' => $entity,
+                'id' => $id,
+                'secure' => $secure,
                 'routes' => $routes,
                 'fields' => $fields
             );
@@ -145,11 +149,6 @@ class XmlMetadata {
 
     public function getIdFieldNameFor($entityClass) {
         $resource = $this->getMetadataFor($entityClass);
-
-        foreach($resource['fields'] as $field) {
-            if($field['id'] == true) {
-                return $field['name'];
-            }
-        }
+        return $resource['id'];
     }
 }

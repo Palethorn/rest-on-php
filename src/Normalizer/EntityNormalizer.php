@@ -14,9 +14,13 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 final class EntityNormalizer implements NormalizerInterface, DenormalizerInterface, CacheableSupportsMethodInterface {
     private $defaultContext = [];
     private $metadata;
-    private $relationNormalizer;
+    private $normalizers = [];
 
-    public function __construct(array $defaultContext = [], XmlMetadata $metadata, EntityManager $entityManager) {
+    public function __construct(array $defaultContext = [], XmlMetadata $metadata, EntityManager $entityManager, $normalizers) {
+        foreach($normalizers as $normalizer) {
+            $this->normalizers[get_class($normalizer)] = $normalizer;
+        }
+        
         $this->defaultContext = array_merge($this->defaultContext, $defaultContext);
         $this->metadata = $metadata;
         $this->entityManager = $entityManager;
@@ -35,9 +39,8 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
         foreach($metadata['fields'] as $field) {
             $getter = 'get' . ucfirst(Utils::camelize($field['name']));
             $value = $object->$getter();
-            
-            if($value && $field['normalizable']) {
-                $normalized[$field['name']] = $this->relationNormalizer->normalize($value, $format, $context);
+            if(isset($field['normalizer']) && $field['normalizer'] != '') {
+                $normalized[$field['name']] = $this->normalizers[$field['normalizer']]->normalize($object, $value);
             } else {
                 $normalized[$field['name']] = $value;
             }
@@ -75,8 +78,8 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
             $field = $this->metadata->getFieldMetadataFor($type, $key);
             $setter = 'set' . ucfirst($key);
 
-            if($field['normalizable']) {
-                $object->$setter($this->relationNormalizer->denormalize($value, $field['type'], $format, $context));
+            if(isset($field['normalizer'])) {
+                $object->$setter($this->normalizers[$field['normalizer']]->denormalize($value, $field['type'], $format, $context));
             } else if($field['type'] == 'datetime') {
                 $object->$setter(\DateTime::createFromFormat('Y-m-d H:i:s O', $value));
             } else {

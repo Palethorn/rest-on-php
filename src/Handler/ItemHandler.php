@@ -2,12 +2,11 @@
 namespace RestOnPhp\Handler;
 
 use RestOnPhp\Metadata\XmlMetadata;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ItemHandler {
@@ -17,8 +16,7 @@ class ItemHandler {
     private $metadata;
     private $repository;
 
-    public function __construct(Serializer $serializer, EntityManager $entityManager, ValidatorInterface $validator, XmlMetadata $metadata) {
-        $this->serializer = $serializer;
+    public function __construct(EntityManager $entityManager, ValidatorInterface $validator, XmlMetadata $metadata) {
         $this->entityManager = $entityManager;
         $this->validator = $validator;
         $this->metadata = $metadata;
@@ -29,7 +27,8 @@ class ItemHandler {
         $requestBody = $request->getContent();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
-        return $this->$method($entityClass, $id, $requestBody);
+        
+        return [ 'item', $this->$method($entityClass, $id, $requestBody) ];
     }
 
     public function get($entityClass, $id, $requestBody) {
@@ -40,19 +39,10 @@ class ItemHandler {
         ], [], true);
 
         if(!$data) {
-            return new Response(
-                $this->serializer->serialize(array('message' => 'Not found'), 'json'), 
-                404, 
-                ['Content-Type' => 'application/json']
-            );
+            throw new ResourceNotFoundException("Item not found");
         }
 
-        $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
-        $normalized = $this->serializer->normalize($data, null, [AbstractNormalizer::ATTRIBUTES => $fields]);
-
-        return new Response(
-            $this->serializer->serialize($normalized, 'json'), 200, ['Content-Type' => 'application/json']
-        );
+        return $data;
     }
 
     public function post($entityClass, $id, $requestBody) {
@@ -66,24 +56,13 @@ class ItemHandler {
                 $message .= $error->getMessage();
             }
 
-            return new Response($this->serializer->serialize(array('message' => $message), 'json'), 400);
+            throw new ValidatorException($message);
         }
 
-        try {
-            $this->entityManager->persist($data);
-            $this->entityManager->flush();
-        } catch(UniqueConstraintViolationException $exception) {
-            return new Response(
-                $this->serializer->serialize(array('message' => 'Already exists'), 'json'), 409, ['Content-Type' => 'application/json']
-            );
-        }
+        $this->entityManager->persist($data);
+        $this->entityManager->flush();
 
-        $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
-        $normalized = $this->serializer->normalize($data, null, [AbstractNormalizer::ATTRIBUTES => $fields]);
-
-        return new Response(
-            $this->serializer->serialize($normalized, 'json'), 200, ['Content-Type' => 'application/json']
-        );
+        return $data;
     }
 
     public function put($entityClass, $id, $requestBody) {
@@ -94,9 +73,7 @@ class ItemHandler {
         ], [], true);
         
         if(!$data) {
-            return new Response(
-                $this->serializer->serialize(array('message' => 'Not found'), 'json'), 404, ['Content-Type' => 'application/json']
-            );
+            throw new ResourceNotFoundException("Item not found");
         }
 
         $this->serializer->deserialize($requestBody, $entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
@@ -109,18 +86,13 @@ class ItemHandler {
                 $message .= $error->getMessage();
             }
 
-            return new Response($this->serializer->serialize(array('message' => $message), 'json'), 400);
+            throw new ValidatorException($message);
         }
 
         $this->entityManager->persist($data);
         $this->entityManager->flush();
 
-        $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
-        $normalized = $this->serializer->normalize($data, null, [AbstractNormalizer::ATTRIBUTES => $fields]);
-
-        return new Response(
-            $this->serializer->serialize($normalized, 'json'), 200, ['Content-Type' => 'application/json']
-        );
+        return $data;
     }
 
     public function delete($entityClass, $id, $requestBody) {
@@ -131,15 +103,13 @@ class ItemHandler {
         ], [], true);
 
         if(!$data) {
-            return new Response(
-                $this->serializer->serialize(array('message' => 'Not found'), 'json'), 404, ['Content-Type' => 'application/json']
-            );
+            throw new ResourceNotFoundException("Item not found");
         }
 
         $this->entityManager->remove($data);
         $this->entityManager->flush();
 
-        return new Response('', 204);
+        return '';
     }
 
     public function patch($entityClass, $id, $requestBody) {

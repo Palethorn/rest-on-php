@@ -22,9 +22,10 @@ services:
 
     symfony.serializer.normalizer.entity:
         class: RestOnPhp\Normalizer\EntityNormalizer
-        arguments: [ [], '@api.metadata.xml', '@doctrine.orm.entity_manager' ]
+        arguments: [ [], '@api.metadata.xml', '@doctrine.orm.entity_manager', !tagged app.serializer.normalizers ]
         tags: [ name: symfony.serializer.normalizers ]
     
     symfony.serializer:
         class: Symfony\Component\Serializer\Serializer
         arguments: [ [ '@symfony.serializer.normalizer.datetime', '@symfony.serializer.normalizer.entity', '@symfony.serializer.normalizer.object', '@symfony.serializer.denormalizer.array' ], [ '@symfony.serializer.encoder.xml_encoder', '@symfony.serializer.encoder.json_encoder' ] ]
+        public: true
