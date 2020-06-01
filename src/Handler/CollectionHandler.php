@@ -28,6 +28,11 @@ class CollectionHandler {
         ];
 
         foreach($f as $field => $filter) {
+            if(in_array($field, array('gt', 'lt', 'gte', 'lte'))) {
+                $filters[$field] = $filter;
+                continue;
+            }
+
             $field_metadata = $this->metadata->getFieldMetadataFor($entityClass, $field);
             $filter_type = isset($field_metadata['filter-type']) ? $field_metadata['filter-type'] : 'exact';
             $filters[$filter_type][$field] = $filter;
