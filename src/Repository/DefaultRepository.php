@@ -22,6 +22,26 @@ class DefaultRepository extends EntityRepository {
             $q->setParameter($field, $value);
         }
 
+        foreach($filters['gt'] as $field => $value) {
+            $q->andWhere(sprintf('r.%s > :%s', $field, $field));
+            $q->setParameter($field, $value);
+        }
+
+        foreach($filters['lt'] as $field => $value) {
+            $q->andWhere(sprintf('r.%s < :%s', $field, $field));
+            $q->setParameter($field, $value);
+        }
+
+        foreach($filters['gte'] as $field => $value) {
+            $q->andWhere(sprintf('r.%s >= :%s', $field, $field));
+            $q->setParameter($field, $value);
+        }
+
+        foreach($filters['lt'] as $field => $value) {
+            $q->andWhere(sprintf('r.%s <= :%s', $field, $field));
+            $q->setParameter($field, $value);
+        }
+
         $q->setMaxResults($pagination['per_page']);
         $q->setFirstResult(($pagination['page'] - 1) * $pagination['per_page']);
         

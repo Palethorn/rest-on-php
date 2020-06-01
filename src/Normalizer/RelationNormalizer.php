@@ -3,8 +3,6 @@ namespace RestOnPhp\Normalizer;
 
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class RelationNormalizer {
     private $metadata;
@@ -19,7 +17,7 @@ class RelationNormalizer {
         $entityClass = str_replace('Proxy\\__CG__\\', '', get_class($value));
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $getter = 'get' . ucfirst($id_field);
-        return $object->$getter();
+        return $value->$getter();
     }
 
     public function denormalize($data, string $type) {
