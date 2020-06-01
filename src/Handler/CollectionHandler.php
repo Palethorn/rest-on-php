@@ -20,7 +20,11 @@ class CollectionHandler {
         $f = $request->query->get('filter') ? $request->query->get('filter') : array();
         $filters = [
             'exact' => [],
-            'partial' => []
+            'partial' => [],
+            'lt' => [],
+            'gt' => [],
+            'lte' => [],
+            'gte' => []
         ];
 
         foreach($f as $field => $filter) {

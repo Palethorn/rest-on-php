@@ -37,7 +37,7 @@ class DefaultRepository extends EntityRepository {
             $q->setParameter($field, $value);
         }
 
-        foreach($filters['lt'] as $field => $value) {
+        foreach($filters['lte'] as $field => $value) {
             $q->andWhere(sprintf('r.%s <= :%s', $field, $field));
             $q->setParameter($field, $value);
         }
