@@ -22,8 +22,13 @@ services:
 
     symfony.serializer.normalizer.entity:
         class: RestOnPhp\Normalizer\EntityNormalizer
-        arguments: [ [], '@api.metadata.xml', '@doctrine.orm.entity_manager', !tagged app.serializer.normalizers ]
+        arguments: [ [], '@api.metadata.xml', '@doctrine.orm.entity_manager', !tagged api.serializer.normalizers ]
         tags: [ name: symfony.serializer.normalizers ]
+
+    symfony.serializer.normalizer.relation:
+        class: RestOnPhp\Normalizer\RelationNormalizer
+        arguments: [ '@api.metadata.xml', '@doctrine.orm.entity_manager' ]
+        tags: [ name: api.serializer.normalizers ]
     
     symfony.serializer:
         class: Symfony\Component\Serializer\Serializer

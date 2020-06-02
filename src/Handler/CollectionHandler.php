@@ -8,27 +8,41 @@ use Symfony\Component\HttpFoundation\Request;
 class CollectionHandler {
     private $entityManager;
     private $metadata;
+    private $filters;
 
-    public function __construct(EntityManager $entityManager, XmlMetadata $metadata) {
+    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_filters = []) {
         $this->entityManager = $entityManager;
         $this->metadata = $metadata;
+        $this->filters = [];
+
+        foreach($default_filters as $filter) {
+            $this->filters[get_class($filter)] = $filter;
+        }
     }
 
     public function handle($entityClass, Request $request) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
+        $filterMetadata = $this->metadata->getFilterMetadataFor($entityClass);
+        $default_filters = [];
+
+        foreach ($filterMetadata as $filterClass) {
+            $default_filters[] = $this->filters[$filterClass];
+        }
 
         $f = $request->query->get('filter') ? $request->query->get('filter') : array();
+
         $filters = [
             'exact' => [],
             'partial' => [],
             'lt' => [],
             'gt' => [],
             'lte' => [],
-            'gte' => []
+            'gte' => [],
+            'default' => $default_filters
         ];
 
         foreach($f as $field => $filter) {
-            if(in_array($field, array('gt', 'lt', 'gte', 'lte'))) {
+            if(in_array($field, array('gt', 'lt', 'gte', 'lte', 'default'))) {
                 $filters[$field] = $filter;
                 continue;
             }

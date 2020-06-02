@@ -13,6 +13,7 @@
 
     <xs:complexType name="resource" >
         <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="filter" type="api:filter" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="field" type="api:field" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="route" type="api:route" minOccurs="0" maxOccurs="unbounded"/>
         </xs:choice>
@@ -20,6 +21,11 @@
         <xs:attribute name="name"></xs:attribute>
         <xs:attribute name="id"></xs:attribute>
         <xs:attribute name="secure" type="xs:boolean" default="false"></xs:attribute>
+        <xs:attribute name="roles"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="filter">
+        <xs:attribute name="class"></xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="field">

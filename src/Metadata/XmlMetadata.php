@@ -40,10 +40,13 @@ class XmlMetadata {
             $entity = $resource->getAttribute('entity');
             $id = $resource->getAttribute('id');
             $secure = $resource->getAttribute('secure');
+            $roles = $resource->getAttribute('roles');
+            $roles = $roles ? explode('|', $roles) : array();
             $secure = $secure == 'true' ? true : false;
 
             $routes = [];
             $fields = [];
+            $filters = [];
 
             foreach($resource->getElementsByTagName('route') as $route_element) {
                 $route_name = $route_element->getAttribute('name');
@@ -75,13 +78,19 @@ class XmlMetadata {
                 );
             }
 
+            foreach($resource->getElementsByTagName('filter') as $field_element) {
+                $filters[] = $field_element->getAttribute('class');
+            }
+
             $parsed[$entity] = array(
                 'name' => $name,
                 'entity' => $entity,
                 'id' => $id,
                 'secure' => $secure,
+                'roles' => $roles,
                 'routes' => $routes,
-                'fields' => $fields
+                'fields' => $fields,
+                'filters' => $filters
             );
         }
 
@@ -150,5 +159,10 @@ class XmlMetadata {
     public function getIdFieldNameFor($entityClass) {
         $resource = $this->getMetadataFor($entityClass);
         return $resource['id'];
+    }
+
+    public function getFilterMetadataFor($entityClass) {
+        $resource = $this->getMetadataFor($entityClass);
+        return $resource['filters'];
     }
 }

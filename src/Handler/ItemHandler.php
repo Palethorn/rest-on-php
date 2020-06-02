@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -15,11 +16,18 @@ class ItemHandler {
     private $validator;
     private $metadata;
     private $repository;
+    private $filters;
 
-    public function __construct(EntityManager $entityManager, ValidatorInterface $validator, XmlMetadata $metadata) {
+    public function __construct(Serializer $serializer, EntityManager $entityManager, ValidatorInterface $validator, XmlMetadata $metadata, $default_filters = []) {
+        $this->serializer = $serializer;
         $this->entityManager = $entityManager;
         $this->validator = $validator;
         $this->metadata = $metadata;
+        $this->filters = [];
+
+        foreach($default_filters as $filter) {
+            $this->filters[get_class($filter)] = $filter;
+        }
     }
 
     public function handle($entityClass, Request $request, $id) {
@@ -27,13 +35,28 @@ class ItemHandler {
         $requestBody = $request->getContent();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
-        
-        return [ 'item', $this->$method($entityClass, $id, $requestBody) ];
+
+        $filterMetadata = $this->metadata->getFilterMetadataFor($entityClass);
+        $default_filters = [];
+
+        foreach ($filterMetadata as $filterClass) {
+            $default_filters[] = $this->filters[$filterClass];
+        }
+
+        return [ 'item', $this->$method($entityClass, $id, $requestBody, $default_filters) ];
     }
 
-    public function get($entityClass, $id, $requestBody) {
+    public function get($entityClass, $id, $requestBody, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $data = $this->repository->get([ 'partial' => [], 'exact' => [ $id_field => $id ] ], [
+        $data = $this->repository->get([ 
+            'partial' => [], 
+            'exact' => [ $id_field => $id ], 
+            'lte' => [],
+            'gte' => [],
+            'lt' => [],
+            'gt' => [],
+            'default' => $default_filters
+        ], [
             'page' => 1,
             'per_page' => 1
         ], [], true);
@@ -65,9 +88,17 @@ class ItemHandler {
         return $data;
     }
 
-    public function put($entityClass, $id, $requestBody) {
+    public function put($entityClass, $id, $requestBody, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $data = $this->repository->get([ 'partial' => [], 'exact' => [ $id_field => $id ] ], [
+        $data = $this->repository->get([ 
+            'partial' => [], 
+            'exact' => [ $id_field => $id ],
+            'lte' => [],
+            'gte' => [],
+            'lt' => [],
+            'gt' => [],
+            'default' => $default_filters
+        ], [
             'page' => 1,
             'per_page' => 1
         ], [], true);
@@ -95,9 +126,17 @@ class ItemHandler {
         return $data;
     }
 
-    public function delete($entityClass, $id, $requestBody) {
+    public function delete($entityClass, $id, $requestBody, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $data = $this->repository->get([ 'partial' => [], 'exact' => [ $id_field => $id ] ], [
+        $data = $this->repository->get([ 
+            'partial' => [], 
+            'exact' => [ $id_field => $id ],
+            'lte' => [],
+            'gte' => [],
+            'lt' => [],
+            'gt' => [],
+            'default' => $default_filters
+        ], [
             'page' => 1,
             'per_page' => 1
         ], [], true);
@@ -112,7 +151,7 @@ class ItemHandler {
         return '';
     }
 
-    public function patch($entityClass, $id, $requestBody) {
-        return $this->put($entityClass, $id, $requestBody);
+    public function patch($entityClass, $id, $requestBody, $default_filters) {
+        return $this->put($entityClass, $id, $requestBody, $default_filters);
     }
 }

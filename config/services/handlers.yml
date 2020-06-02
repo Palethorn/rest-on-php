@@ -1,12 +1,12 @@
 services:
     api.handler.collection:
         class: RestOnPhp\Handler\CollectionHandler
-        arguments: [ '@doctrine.orm.entity_manager', '@api.metadata.xml' ]
+        arguments: [ '@doctrine.orm.entity_manager', '@api.metadata.xml', !tagged api.filters.default ]
         public: true
 
     api.handler.item:
         class: RestOnPhp\Handler\ItemHandler
-        arguments: [ '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml' ]
+        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml', !tagged api.filters.default ]
         public: true
 
     api.handler.docs:

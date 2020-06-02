@@ -2,6 +2,7 @@
 namespace RestOnPhp;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use RestOnPhp\Security\SecureUser;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Config\FileLocator;
@@ -9,6 +10,7 @@ use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
@@ -154,8 +156,7 @@ abstract class Kernel implements HttpKernelInterface {
         try {
             $resourceMetadata = $this->metadata->getMetadataFor($entityClass);
         } catch(ResourceNotFoundException $e) {
-
-            $resourceMetadata = [ 'secure' => false ];
+            $resourceMetadata = [ 'secure' => false, 'roles' => array() ];
         }
 
         if(isset($resourceMetadata['secure']) && $resourceMetadata['secure']) {
@@ -163,6 +164,27 @@ abstract class Kernel implements HttpKernelInterface {
             $token = $token_extractor->extract($this->request);
             $user = $this->dependencyContainer->get('api.handler.auth')->verify($token);
             $this->dependencyContainer->get('api.session.storage')->setUser($user);
+
+            if(!($user instanceof SecureUser)) {
+                return;
+            }
+
+            $authorized = true;
+
+            if(!empty($resourceMetadata['roles'])) {
+                $authorized = false;
+            }
+
+            foreach($resourceMetadata['roles'] as $role) {
+                if($user->hasRole($role)) {
+                    $authorized = true;
+                    break;
+                }
+            }
+
+            if(!$authorized) {
+                throw new UnauthorizedHttpException('role', 'User does not have permission to access this resource');
+            }
         }
     }
 
@@ -204,17 +226,17 @@ abstract class Kernel implements HttpKernelInterface {
 
     public function addRoute($path, $callback) {
         $this->routes[$path] = [[[
-                '_route' => $path,
-                '_controller' => $callback,
-            ],
-            NULL, [
-                'POST' => 0,
-            ],
-            NULL,
-            false,
-            false,
-            NULL,
-        ]];
+            '_route' => $path,
+            '_controller' => $callback,
+        ],
+        NULL, [
+            'POST' => 0,
+        ],
+        NULL,
+        false,
+        false,
+        NULL,
+    ]];
     }
 
     public function getDependencyContainer() {
