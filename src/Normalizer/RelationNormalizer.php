@@ -14,6 +14,10 @@ class RelationNormalizer {
     }
 
     public function normalize($object, $value) {
+        if($value == null) {
+            return null;
+        }
+        
         $entityClass = str_replace('Proxy\\__CG__\\', '', get_class($value));
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $getter = 'get' . ucfirst($id_field);
