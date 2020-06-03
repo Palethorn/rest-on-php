@@ -40,7 +40,7 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
             $getter = 'get' . ucfirst(Utils::camelize($field['name']));
             $value = $object->$getter();
 
-            if(isset($field['normalizer']) && $field['normalizer'] != '' && $value != null) {
+            if(isset($field['normalizer']) && $field['normalizer'] != '') {
                 $normalized[$field['name']] = $this->normalizers[$field['normalizer']]->normalize($object, $value);
             } else {
                 $normalized[$field['name']] = $value;

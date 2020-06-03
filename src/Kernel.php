@@ -130,14 +130,15 @@ abstract class Kernel implements HttpKernelInterface {
     private function getHandler() {
         $matcher = new CompiledUrlMatcher($this->routes, $this->context);
         $attributes = $matcher->match($this->request->getPathInfo());
-
+        $id = isset($attributes['id']) ? $attributes['id'] : null;
+        
         if(!isset($attributes['_controller'])) {
             throw new NoConfigurationException(sprintf('Missing controller property on route'));
         }
 
         if(!isset($attributes['resource'])) {
             $handler = $this->dependencyContainer->get($attributes['_controller']);
-            return [ $handler, null, null];
+            return [ $handler, null, $id];
         }
 
         $single_form = substr(ucfirst($attributes['resource']), 0, -1);
@@ -147,7 +148,6 @@ abstract class Kernel implements HttpKernelInterface {
             throw new ResourceNotFoundException(sprintf('%s resource class does not exist!', $entityClass));
         }
 
-        $id = isset($attributes['id']) ? $attributes['id'] : null;
         $handler = $this->dependencyContainer->get($attributes['_controller']);
         return [ $handler, $entityClass, $id];
     }
