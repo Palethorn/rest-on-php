@@ -1,12 +1,12 @@
 services:
     api.handler.collection:
         class: RestOnPhp\Handler\CollectionHandler
-        arguments: [ '@doctrine.orm.entity_manager', '@api.metadata.xml', !tagged api.filters.default ]
+        arguments: [ '@doctrine.orm.entity_manager', '@api.metadata.xml', !tagged api.filters.default, '@api.request.stack' ]
         public: true
 
     api.handler.item:
         class: RestOnPhp\Handler\ItemHandler
-        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml', !tagged api.filters.default ]
+        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml', !tagged api.filters.default, '@api.request.stack' ]
         public: true
 
     api.handler.docs:
@@ -16,5 +16,5 @@ services:
 
     api.handler.auth:
         class: RestOnPhp\Handler\AuthHandler
-        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '%jwt_secret%', '%user_entity%' ]
+        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '%jwt_secret%', '%user_entity%', '@api.request.stack' ]
         public: true

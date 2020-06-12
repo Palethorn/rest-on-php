@@ -3,14 +3,15 @@ namespace RestOnPhp\Handler;
 
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class CollectionHandler {
-    private $entityManager;
-    private $metadata;
     private $filters;
+    private $request;
+    private $metadata;
+    private $entityManager;
 
-    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_filters = []) {
+    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_filters = [], RequestStack $requestStack) {
         $this->entityManager = $entityManager;
         $this->metadata = $metadata;
         $this->filters = [];
@@ -18,9 +19,11 @@ class CollectionHandler {
         foreach($default_filters as $filter) {
             $this->filters[get_class($filter)] = $filter;
         }
+
+        $this->request = $requestStack->getCurrentRequest();
     }
 
-    public function handle($entityClass, Request $request) {
+    public function handle($entityClass) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $filterMetadata = $this->metadata->getFilterMetadataFor($entityClass);
         $default_filters = [];
@@ -29,7 +32,7 @@ class CollectionHandler {
             $default_filters[] = $this->filters[$filterClass];
         }
 
-        $f = $request->query->get('filter') ? $request->query->get('filter') : array();
+        $f = $this->request->query->get('filter') ? $this->request->query->get('filter') : array();
 
         $filters = [
             'exact' => [],
@@ -52,12 +55,12 @@ class CollectionHandler {
             $filters[$filter_type][$field] = $filter;
         }
 
-        $pagination_parameters = $request->query->get('pagination') ? $request->query->get('pagination') : array(
+        $pagination_parameters = $this->request->query->get('pagination') ? $this->request->query->get('pagination') : array(
             'page' => 1,
             'per_page' => 10
         );
         
-        $order = $request->query->get('order') ? $request->query->get('order') : array(
+        $order = $this->request->query->get('order') ? $this->request->query->get('order') : array(
             $id_field => 'ASC'
         );
 
@@ -66,15 +69,15 @@ class CollectionHandler {
          */
         $entityRepository = $this->entityManager->getRepository($entityClass);
         $paginator = $entityRepository->get($filters, $pagination_parameters, $order);
-        $pagination = $this->pagination($entityClass, $paginator, $pagination_parameters, $request);
+        $pagination = $this->pagination($entityClass, $paginator, $pagination_parameters);
         return [ 'collection', $paginator, $pagination ];
     }
 
-    private function pagination($entityClass, $paginator, $pagination_parameters, $request) {
+    private function pagination($entityClass, $paginator, $pagination_parameters) {
 
         $total_items = count($paginator);
         $route = $this->metadata->getRouteMetadataFor($entityClass, 'getCollection');
-        $params = $request->query->all();
+        $params = $this->request->query->all();
         $params['pagination']['page'] = $pagination_parameters['page'];
         $params['pagination']['per_page'] = $pagination_parameters['per_page'];
 

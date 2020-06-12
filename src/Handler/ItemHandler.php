@@ -4,6 +4,7 @@ namespace RestOnPhp\Handler;
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Serializer;
@@ -11,28 +12,37 @@ use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ItemHandler {
-    private $serializer;
-    private $entityManager;
-    private $validator;
-    private $metadata;
-    private $repository;
+    private $request;
     private $filters;
+    private $metadata;
+    private $validator;
+    private $serializer;
+    private $repository;
+    private $entityManager;
 
-    public function __construct(Serializer $serializer, EntityManager $entityManager, ValidatorInterface $validator, XmlMetadata $metadata, $default_filters = []) {
+    public function __construct(
+        Serializer $serializer, 
+        EntityManager $entityManager, 
+        ValidatorInterface $validator, 
+        XmlMetadata $metadata, 
+        $default_filters = [], 
+        RequestStack $requestStack
+    ) {
+
+        $this->filters = [];
+        $this->metadata = $metadata;
+        $this->validator = $validator;
         $this->serializer = $serializer;
         $this->entityManager = $entityManager;
-        $this->validator = $validator;
-        $this->metadata = $metadata;
-        $this->filters = [];
+        $this->request = $requestStack->getCurrentRequest();
 
         foreach($default_filters as $filter) {
             $this->filters[get_class($filter)] = $filter;
         }
     }
 
-    public function handle($entityClass, Request $request, $id) {
-        $method = $request->getMethod();
-        $requestBody = $request->getContent();
+    public function handle($entityClass, $id) {
+        $method = $this->request->getMethod();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
 
@@ -43,10 +53,10 @@ class ItemHandler {
             $default_filters[] = $this->filters[$filterClass];
         }
 
-        return [ 'item', $this->$method($entityClass, $id, $requestBody, $default_filters) ];
+        return [ 'item', $this->$method($entityClass, $id, $default_filters) ];
     }
 
-    public function get($entityClass, $id, $requestBody, $default_filters) {
+    public function get($entityClass, $id, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -68,8 +78,8 @@ class ItemHandler {
         return $data;
     }
 
-    public function post($entityClass, $id, $requestBody) {
-        $data = $this->serializer->deserialize($requestBody, $entityClass, 'json');
+    public function post($entityClass, $id) {
+        $data = $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json');
         $errors = $this->validator->validate($data);
 
         if(count($errors) > 0) {
@@ -88,7 +98,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function put($entityClass, $id, $requestBody, $default_filters) {
+    public function put($entityClass, $id, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -107,7 +117,7 @@ class ItemHandler {
             throw new ResourceNotFoundException("Item not found");
         }
 
-        $this->serializer->deserialize($requestBody, $entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
+        $this->serializer->deserialize($entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
         $errors = $this->validator->validate($data);
 
         if(count($errors) > 0) {
@@ -126,7 +136,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function delete($entityClass, $id, $requestBody, $default_filters) {
+    public function delete($entityClass, $id, $default_filters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -151,7 +161,7 @@ class ItemHandler {
         return '';
     }
 
-    public function patch($entityClass, $id, $requestBody, $default_filters) {
-        return $this->put($entityClass, $id, $requestBody, $default_filters);
+    public function patch($entityClass, $id, $default_filters) {
+        return $this->put($entityClass, $id, $default_filters);
     }
 }

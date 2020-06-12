@@ -2,12 +2,14 @@
 namespace RestOnPhp;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use RestOnPhp\Handler\ClosureHandler;
 use RestOnPhp\Security\SecureUser;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -136,6 +138,10 @@ abstract class Kernel implements HttpKernelInterface {
             throw new NoConfigurationException(sprintf('Missing controller property on route'));
         }
 
+        if($attributes['_controller'] instanceof \Closure) {
+            return [new ClosureHandler($attributes['_controller'], $this->dependencyContainer->get('api.request.stack')) , null, $id];
+        }
+
         if(!isset($attributes['resource'])) {
             $handler = $this->dependencyContainer->get($attributes['_controller']);
             return [ $handler, null, $id];
@@ -190,6 +196,8 @@ abstract class Kernel implements HttpKernelInterface {
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
         $this->request = $request;
+        $request_stack = $this->dependencyContainer->get('api.request.stack');
+        $request_stack->push($this->request);
         $this->context = new RequestContext();
         $this->context->fromRequest($request);
 
@@ -225,18 +233,19 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     public function addRoute($path, $callback) {
-        $this->routes[$path] = [[[
-            '_route' => $path,
-            '_controller' => $callback,
-        ],
-        NULL, [
-            'POST' => 0,
-        ],
-        NULL,
-        false,
-        false,
-        NULL,
-    ]];
+        $this->routes[1][$path] = [[[
+                '_route' => $path,
+                '_controller' => $callback,
+            ],
+            NULL, [
+                'GET' => 0,
+            ],
+            NULL,
+            false,
+            false,
+            NULL,
+        ]];
+
     }
 
     public function getDependencyContainer() {

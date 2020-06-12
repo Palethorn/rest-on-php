@@ -23,6 +23,10 @@ services:
         class: RestOnPhp\Session\JwtSessionStorage
         public: true
     
+    api.request.stack:
+        class: Symfony\Component\HttpFoundation\RequestStack
+        public: true
+    
     api.token.extractor:
         class: RestOnPhp\Token\Extractor
         public: true

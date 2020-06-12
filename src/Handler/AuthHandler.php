@@ -6,27 +6,29 @@ use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Serializer\Serializer;
 
 class AuthHandler {
-    private $entityManager;
-    private $jwtSecret;
     private $signer;
     private $entity;
+    private $request;
+    private $jwtSecret;
+    private $entityManager;
 
-    public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity) {
+    public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity, RequestStack $requestStack) {
         $this->entity = $entity;
         $this->signer = new Sha256();
         $this->jwtSecret = $jwtSecret;
         $this->serializer = $serializer;
         $this->entityManager = $entityManager;
+        $this->request = $requestStack->getCurrentRequest();
     }
 
-    public function handle($entityClass = null, Request $request) {
-        $content = $request->getContent();
+    public function handle($entityClass = null) {
+        $content = $this->request->getContent();
         $params = json_decode($content, true);
 
         if(!$params || !isset($params['username']) || !isset($params['password'])) {
