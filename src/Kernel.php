@@ -138,10 +138,6 @@ abstract class Kernel implements HttpKernelInterface {
             throw new NoConfigurationException(sprintf('Missing controller property on route'));
         }
 
-        if($attributes['_controller'] instanceof \Closure) {
-            return [new ClosureHandler($attributes['_controller'], $this->dependencyContainer->get('api.request.stack')) , null, $id];
-        }
-
         if(!isset($attributes['resource'])) {
             $handler = $this->dependencyContainer->get($attributes['_controller']);
             return [ $handler, null, $id];
@@ -230,22 +226,6 @@ abstract class Kernel implements HttpKernelInterface {
         }
 
         return $response;
-    }
-
-    public function addRoute($path, $callback) {
-        $this->routes[1][$path] = [[[
-                '_route' => $path,
-                '_controller' => $callback,
-            ],
-            NULL, [
-                'GET' => 0,
-            ],
-            NULL,
-            false,
-            false,
-            NULL,
-        ]];
-
     }
 
     public function getDependencyContainer() {
