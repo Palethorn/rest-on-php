@@ -18,6 +18,10 @@ final class CreateUserCommand extends Command {
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
+        if(!$this->user) {
+            throw new RuntimeException('User object could not be instantiated. Check user entity class.');
+        }
+
         $username = $input->getArgument('username');
         $password = $input->getArgument('password');
         
@@ -38,6 +42,10 @@ final class CreateUserCommand extends Command {
     }
 
     public function setUserEntity(string $entity) {
+        if(!class_exists($entity)) {
+            return;
+        };
+
         $this->user = new $entity();
     }
 }
