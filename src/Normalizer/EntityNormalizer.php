@@ -67,7 +67,6 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
      * @throws NotNormalizableValueException
      */
     public function denormalize($data, string $type, string $format = null, array $context = []) {
-        
         if(isset($context['object_to_populate'])) {
             $object = $context['object_to_populate'];
         } else {
@@ -79,8 +78,14 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
             $field = $this->metadata->getFieldMetadataFor($type, $key);
             $setter = 'set' . ucfirst($key);
 
-            if(isset($field['normalizer'])) {
-                $object->$setter($this->normalizers[$field['normalizer']]->denormalize($value, $field['type'], $format, $context));
+            if(isset($field['normalizer']) && $field['normalizer'] != '') {
+                $object->$setter(
+                    $this->normalizers[$field['normalizer']]->denormalize(
+                        $value, 
+                        $field['type'],
+                        $format, 
+                        $context
+                    ));
             } else if($field['type'] == 'datetime') {
                 $object->$setter(\DateTime::createFromFormat('Y-m-d H:i:s O', $value));
             } else {
@@ -95,6 +100,13 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
      * {@inheritdoc}
      */
     public function supportsDenormalization($data, string $type, string $format = null) {
+        $reflectionClass = new \ReflectionClass($type);
+        $interfaceNames = $reflectionClass->getInterfaceNames();
+        
+        if(in_array('RestOnPhp\Normalizer\Normalizable', $interfaceNames)) {
+            return true;
+        }
+
         return $type instanceof Denormalizable;
     }
 

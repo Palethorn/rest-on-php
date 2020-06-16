@@ -41,7 +41,7 @@ class ItemHandler {
         }
     }
 
-    public function handle($entityClass, $id) {
+    public function handle($entityClass, $id = null) {
         $method = $this->request->getMethod();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);

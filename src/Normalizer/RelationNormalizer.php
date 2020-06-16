@@ -29,14 +29,10 @@ class RelationNormalizer {
             return null;
         }
 
-        $matches = array();
-        preg_match('/.*\/(.*)$/', $data, $matches);
-        $id = $matches[1];
-
         $repository = $this->entityManager->getRepository($type);
         $id_field = $this->metadata->getIdFieldNameFor($type);
         $object = $repository->findOneBy(array(
-            $id_field => $id
+            $id_field => $data
         ));
 
         return $object;

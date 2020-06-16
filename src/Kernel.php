@@ -99,7 +99,6 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     private function normalize($entityClass, $data) {
-
         $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
         
         if($data[0] == 'collection') {
@@ -132,7 +131,7 @@ abstract class Kernel implements HttpKernelInterface {
     private function getHandler() {
         $matcher = new CompiledUrlMatcher($this->routes, $this->context);
         $attributes = $matcher->match($this->request->getPathInfo());
-        $id = isset($attributes['id']) ? $attributes['id'] : null;
+        $parameters = [];
 
         if(!isset($attributes['_controller'])) {
             throw new NoConfigurationException(sprintf('Missing controller property on route'));
@@ -140,7 +139,16 @@ abstract class Kernel implements HttpKernelInterface {
 
         if(!isset($attributes['resource'])) {
             $handler = $this->dependencyContainer->get($attributes['_controller']);
-            return [ $handler, null, $id];
+            $reflectionClass = new \ReflectionClass($handler);
+            $reflectionMethod = $reflectionClass->getMethod('handle');
+
+            foreach($reflectionMethod->getParameters() as $parameter) {
+                if(isset($attributes[$parameter->name])) {
+                    $parameters[] = $attributes[$parameter->name];
+                }
+            }
+
+            return [ $handler, $reflectionMethod, $parameters];
         }
 
         $single_form = substr(ucfirst($attributes['resource']), 0, -1);
@@ -151,7 +159,17 @@ abstract class Kernel implements HttpKernelInterface {
         }
 
         $handler = $this->dependencyContainer->get($attributes['_controller']);
-        return [ $handler, $entityClass, $id];
+        $reflectionClass = new \ReflectionClass($handler);
+        $reflectionMethod = $reflectionClass->getMethod('handle');
+        $parameters[] = $entityClass;
+
+        foreach($reflectionMethod->getParameters() as $parameter) {
+            if(isset($attributes[$parameter->name])) {
+                $parameters[] = $attributes[$parameter->name];
+            }
+        }
+
+        return [ $handler, $reflectionMethod, $parameters];
     }
 
     private function security($entityClass) { 
@@ -198,9 +216,10 @@ abstract class Kernel implements HttpKernelInterface {
         $this->context->fromRequest($request);
 
         try {
-            list($handler, $entityClass, $id) = $this->getHandler();
+            list($handler, $reflectionMethod, $args) = $this->getHandler();
+            $entityClass = isset($args[0]) ? $args[0] : null;
             $this->security($entityClass);
-            $data = $handler->handle($entityClass, $request, $id);
+            $data = $reflectionMethod->invokeArgs($handler, $args);
 
             if($data instanceof Response) {
                 return $data;
