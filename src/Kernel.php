@@ -2,14 +2,13 @@
 namespace RestOnPhp;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use RestOnPhp\Handler\ClosureHandler;
+use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
 use RestOnPhp\Security\SecureUser;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -50,9 +49,16 @@ abstract class Kernel implements HttpKernelInterface {
      */
     private $context;
 
+    /**
+     * @var \Monolog\Logger
+     */
+    private $logger;
+
     public function __construct() {
-        $this->loadDependencyContainer();
         $this->loadRoutes();
+        $this->loadDependencyContainer();
+
+        $this->logger = $this->dependencyContainer->get('api.logger');
         $this->metadata = $this->dependencyContainer->get('api.metadata.xml');
         $this->serializer = $this->dependencyContainer->get('symfony.serializer');
     }
@@ -68,6 +74,7 @@ abstract class Kernel implements HttpKernelInterface {
         }
 
         $this->dependencyContainer = new ContainerBuilder();
+        $this->dependencyContainer->addCompilerPass(new LoggerPass());
         $loader = new YamlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
         $loader->load('services.yml');
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
@@ -99,6 +106,10 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     private function normalize($entityClass, $data) {
+        $this->logger->info('NORMALIZE', [
+            'entity_class' => $entityClass
+        ]);
+
         $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
         
         if($data[0] == 'collection') {
@@ -125,15 +136,23 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     private function serialize($data) {
+        $this->logger->info('SERIALIZE');
         return $this->serializer->serialize($data, 'json');
     }
 
     private function getHandler() {
+        $this->logger->info('HANDLER_LOAD');
+
         $matcher = new CompiledUrlMatcher($this->routes, $this->context);
         $attributes = $matcher->match($this->request->getPathInfo());
         $parameters = [];
 
         if(!isset($attributes['_controller'])) {
+            $this->logger->error('HANDLER_LOAD_FAIL', [
+                'message' => 'Missing controller property on route',
+                'attributes' => $attributes
+            ]);
+
             throw new NoConfigurationException(sprintf('Missing controller property on route'));
         }
 
@@ -155,6 +174,11 @@ abstract class Kernel implements HttpKernelInterface {
         $entityClass = sprintf('%s\\%s', $this->dependencyContainer->getParameter('entity_namespace'), Utils::camelize($single_form));
 
         if(!class_exists($entityClass)) {
+            $this->logger->error('HANDLER_LOAD_FAIL', [
+                'message' => sprintf('%s resource class does not exist!', $entityClass),
+                'attributes' => $attributes
+            ]);
+
             throw new ResourceNotFoundException(sprintf('%s resource class does not exist!', $entityClass));
         }
 
@@ -173,6 +197,8 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     private function security($entityClass) { 
+        $this->logger->info('SECURITY_CHECK');
+
         try {
             $resourceMetadata = $this->metadata->getMetadataFor($entityClass);
         } catch(ResourceNotFoundException $e) {
@@ -184,6 +210,11 @@ abstract class Kernel implements HttpKernelInterface {
             $token = $token_extractor->extract($this->request);
             $user = $this->dependencyContainer->get('api.handler.auth')->verify($token);
             $this->dependencyContainer->get('api.session.storage')->setUser($user);
+
+            $this->logger->info('SECURITY_INFO', [
+                'token' => $token,
+                'user_id' => $user
+            ]);
 
             if(!($user instanceof SecureUser)) {
                 return;
@@ -203,12 +234,26 @@ abstract class Kernel implements HttpKernelInterface {
             }
 
             if(!$authorized) {
+                $this->logger->error('SECURITY_USER_UNAUTHORIZED', [
+                    'token' => $token,
+                    'user_id' => $user
+                ]);
+
                 throw new UnauthorizedHttpException('role', 'User does not have permission to access this resource');
             }
         }
     }
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
+
+        $this->logger->info('REQUEST', [
+            'client_ip' => $request->getClientIp(),
+            'method' => $request->getMethod(),
+            'uri' => $request->getUri(),
+            'query_string' => $request->getQueryString(),
+            'content' => $request->getContent()
+        ]);
+
         $this->request = $request;
         $request_stack = $this->dependencyContainer->get('api.request.stack');
         $request_stack->push($this->request);
@@ -243,6 +288,12 @@ abstract class Kernel implements HttpKernelInterface {
         } catch(HttpException $e) {
             $response = new Response(json_encode($e->getMessage()), $e->getStatusCode(), ['Content-Type' => 'application/json']);
         }
+
+        $this->logger->info('RESPONSE', [
+            'content_length' => strlen($response->getContent()),
+            'status_code' => $response->getStatusCode(),
+            'content_type' => $response->headers->get('Content-Type')
+        ]);
 
         return $response;
     }

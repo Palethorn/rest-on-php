@@ -60,6 +60,10 @@ class AuthHandler {
         );
     }
 
+
+    /**
+     * @return \RestOnPhp\Security\SecureUser
+     */
     public function verify($token) {
         if(!$token) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
