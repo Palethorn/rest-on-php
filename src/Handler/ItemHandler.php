@@ -117,7 +117,7 @@ class ItemHandler {
             throw new ResourceNotFoundException("Item not found");
         }
 
-        $this->serializer->deserialize($entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
+        $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
         $errors = $this->validator->validate($data);
 
         if(count($errors) > 0) {
