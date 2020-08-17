@@ -46,8 +46,10 @@ class DefaultRepository extends EntityRepository {
             $q = $filter->filter($q);
         }
 
-        $q->setMaxResults($pagination['per_page']);
-        $q->setFirstResult(($pagination['page'] - 1) * $pagination['per_page']);
+        if($pagination && is_array($pagination) && isset($pagination['page'], $pagination['per_page'])) {
+            $q->setMaxResults($pagination['per_page']);
+            $q->setFirstResult(($pagination['page'] - 1) * $pagination['per_page']);
+        }
         
         if($single) {
             return $q->getQuery()->getOneOrNullResult();

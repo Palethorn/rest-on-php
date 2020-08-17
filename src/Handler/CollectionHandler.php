@@ -55,11 +55,19 @@ class CollectionHandler {
             $filters[$filter_type][$field] = $filter;
         }
 
-        $pagination_parameters = $this->request->query->get('pagination') ? $this->request->query->get('pagination') : array(
-            'page' => 1,
-            'per_page' => 10
-        );
+        $pagination_parameters = $this->request->query->get('pagination');
         
+        if($pagination_parameters == null) {
+            $pagination_parameters = [
+                'page' => 1,
+                'per_page' => 10
+            ];
+        }
+
+        if($pagination_parameters == '0' || $pagination_parameters == 'false') {
+            $pagination_parameters = false;
+        }
+
         $order = $this->request->query->get('order') ? $this->request->query->get('order') : array(
             $id_field => 'ASC'
         );
@@ -74,6 +82,10 @@ class CollectionHandler {
     }
 
     private function pagination($entityClass, $paginator, $pagination_parameters) {
+
+        if($pagination_parameters == false) {
+            return [];
+        }
 
         $total_items = count($paginator);
         $route = $this->metadata->getRouteMetadataFor($entityClass, 'getCollection');
