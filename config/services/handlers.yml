@@ -6,7 +6,7 @@ services:
 
     api.handler.item:
         class: RestOnPhp\Handler\ItemHandler
-        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml', !tagged api.filters.default, '@api.request.stack' ]
+        arguments: [ '@symfony.serializer', '@doctrine.orm.entity_manager', '@symfony.validator', '@api.metadata.xml', !tagged api.filters.default, !tagged api.autofillers.default, '@api.request.stack' ]
         public: true
 
     api.handler.docs:

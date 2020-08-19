@@ -14,6 +14,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class ItemHandler {
     private $request;
     private $filters;
+    private $autofillers;
     private $metadata;
     private $validator;
     private $serializer;
@@ -26,10 +27,12 @@ class ItemHandler {
         ValidatorInterface $validator, 
         XmlMetadata $metadata, 
         $default_filters = [], 
+        $autofillers = [], 
         RequestStack $requestStack
     ) {
 
         $this->filters = [];
+        $this->autofillers = [];
         $this->metadata = $metadata;
         $this->validator = $validator;
         $this->serializer = $serializer;
@@ -38,6 +41,10 @@ class ItemHandler {
 
         foreach($default_filters as $filter) {
             $this->filters[get_class($filter)] = $filter;
+        }
+
+        foreach($autofillers as $autofiller) {
+            $this->autofillers[get_class($autofiller)] = $autofiller;
         }
     }
 
@@ -53,7 +60,14 @@ class ItemHandler {
             $default_filters[] = $this->filters[$filterClass];
         }
 
-        return [ 'item', $this->$method($entityClass, $id, $default_filters) ];
+        $autofillerMetadata = $this->metadata->getAutofillerMetadataFor($entityClass);
+        $default_autofillers = [];
+
+        foreach ($autofillerMetadata as $autofillerClass) {
+            $default_autofillers[] = $this->autofillers[$autofillerClass];
+        }
+
+        return [ 'item', $this->$method($entityClass, $id, $default_filters, $default_autofillers) ];
     }
 
     public function get($entityClass, $id, $default_filters) {
@@ -78,7 +92,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function post($entityClass, $id) {
+    public function post($entityClass, $id, $filters, $autofillers) {
         $data = $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json');
         $errors = $this->validator->validate($data);
 
@@ -90,6 +104,10 @@ class ItemHandler {
             }
 
             throw new ValidatorException($message);
+        }
+
+        foreach($autofillers as $autofiller) {
+            $autofiller->fill($data);
         }
 
         $this->entityManager->persist($data);
