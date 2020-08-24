@@ -116,7 +116,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function put($entityClass, $id, $default_filters) {
+    public function put($entityClass, $id, $default_filters, $autofillers = []) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -146,6 +146,10 @@ class ItemHandler {
             }
 
             throw new ValidatorException($message);
+        }
+
+        foreach($autofillers as $autofiller) {
+            $autofiller->fill($data);
         }
 
         $this->entityManager->persist($data);
