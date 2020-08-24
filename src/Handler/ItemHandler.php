@@ -183,7 +183,7 @@ class ItemHandler {
         return '';
     }
 
-    public function patch($entityClass, $id, $default_filters) {
-        return $this->put($entityClass, $id, $default_filters);
+    public function patch($entityClass, $id, $default_filters, $autofillers) {
+        return $this->put($entityClass, $id, $default_filters, $autofillers);
     }
 }
