@@ -9,6 +9,7 @@ use Lcobucci\JWT\Signer\Key;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 class AuthHandler {
@@ -17,6 +18,7 @@ class AuthHandler {
     private $request;
     private $jwtSecret;
     private $entityManager;
+    private $serializer;
 
     public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity, RequestStack $requestStack) {
         $this->entity = $entity;
@@ -46,15 +48,22 @@ class AuthHandler {
         if(!password_verify($params['password'], $user->getPassword())) {
             throw new UnauthorizedHttpException('username, password', 'Wrong username or password');
         }
-
         
         $token = (new Builder())
             ->issuedAt(time())
             ->withClaim('id', $user->getId())
             ->getToken($this->signer, new Key($this->jwtSecret));
 
+        $user->setToken($token->__toString());
+
+        $normalized = $this->serializer->normalize(
+            $user, 
+            null,
+            [AbstractNormalizer::ATTRIBUTES => [ 'id', 'username', 'token', 'roles' ]]
+        );
+
         return new Response(
-            json_encode($token->__toString()), 
+            $this->serializer->serialize($normalized, 'json'), 
             200, 
             ['Content-Type' => 'application/json']
         );
