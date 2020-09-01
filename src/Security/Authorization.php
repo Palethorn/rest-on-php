@@ -9,6 +9,7 @@ use RestOnPhp\Session\JwtSessionStorage;
 use RestOnPhp\Token\Extractor;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Monolog\Logger;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class Authorization {
     private $metadata, $tokenExtractor, $authHandler, $sessionStorage, $logger, $request;
