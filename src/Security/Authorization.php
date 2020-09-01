@@ -11,19 +11,21 @@ use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Monolog\Logger;
 
 class Authorization {
-    private $metadata, $tokenExtractor, $authHandler, $sessionStorage, $logger;
+    private $metadata, $tokenExtractor, $authHandler, $sessionStorage, $logger, $request;
 
     public function __construct(
         XmlMetadata $metadata, 
         Extractor $tokenExtractor, 
         AuthHandler $authHandler,
         JwtSessionStorage $sessionStorage,
+        RequestStack $requestStack,
         Logger $logger 
     ) {
         $this->metadata = $metadata;
         $this->tokenExtractor = $tokenExtractor;
         $this->authHandler = $authHandler;
         $this->sessionStorage = $sessionStorage;
+        $this->request = $this->requestStack->getCurrentRequest();
         $this->logger = $logger;
     }
 
