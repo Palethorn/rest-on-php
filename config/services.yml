@@ -18,19 +18,10 @@ services:
             - '%project_dir%/config'
             - '%cache_dir%'
             - '%entity_namespace%'
-
-    api.session.storage:
-        class: RestOnPhp\Session\JwtSessionStorage
-        public: true
     
     api.request.stack:
         class: Symfony\Component\HttpFoundation\RequestStack
         public: true
-    
-    api.token.extractor:
-        class: RestOnPhp\Token\Extractor
-        public: true
-        arguments: [ '%token_bearer%', '%token_key%' ]
 
     api.metadata.xml:
         class: RestOnPhp\Metadata\XmlMetadata

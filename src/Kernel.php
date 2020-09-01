@@ -3,7 +3,6 @@ namespace RestOnPhp;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
-use RestOnPhp\Security\SecureUser;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Config\FileLocator;
@@ -11,7 +10,6 @@ use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
@@ -212,50 +210,11 @@ abstract class Kernel implements HttpKernelInterface {
 
     private function security($entityClass) { 
         $this->logger->info('SECURITY_CHECK');
-
-        try {
-            $resourceMetadata = $this->metadata->getMetadataFor($entityClass);
-        } catch(ResourceNotFoundException $e) {
-            $resourceMetadata = [ 'secure' => false, 'roles' => array() ];
-        }
-
-        if(isset($resourceMetadata['secure']) && $resourceMetadata['secure']) {
-            $token_extractor = $this->dependencyContainer->get('api.token.extractor');
-            $token = $token_extractor->extract($this->request);
-            $user = $this->dependencyContainer->get('api.handler.auth')->verify($token);
-            $this->dependencyContainer->get('api.session.storage')->setUser($user);
-
-            $this->logger->info('SECURITY_INFO', [
-                'token' => $token,
-                'user_id' => $user
-            ]);
-
-            if(!($user instanceof SecureUser)) {
-                return;
-            }
-
-            $authorized = true;
-
-            if(!empty($resourceMetadata['roles'])) {
-                $authorized = false;
-            }
-
-            foreach($resourceMetadata['roles'] as $role) {
-                if($user->hasRole($role)) {
-                    $authorized = true;
-                    break;
-                }
-            }
-
-            if(!$authorized) {
-                $this->logger->error('SECURITY_USER_UNAUTHORIZED', [
-                    'token' => $token,
-                    'user_id' => $user
-                ]);
-
-                throw new UnauthorizedHttpException('role', 'User does not have permission to access this resource');
-            }
-        }
+        /**
+         * @var Security\Authorization
+         */
+        $authorization = $this->dependencyContainer->get('api.security.authorization');
+        $authorization->authorize($entityClass);
     }
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {

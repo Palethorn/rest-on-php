@@ -15,6 +15,34 @@ composer require palethorn/rest-on-php
 
 # Configuration
 
+### bin/console
+Enable executing symfony commands.
+
+```php
+#!/usr/bin/env php
+<?php
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Console\Application;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+
+$dependencyContainer = new ContainerBuilder();
+$loader = new YamlFileLoader($dependencyContainer, new FileLocator(__DIR__ . '/../config'));
+$loader->load('services.yml');
+$commands = $dependencyContainer->findTaggedServiceIds('command');
+$application = new Application();
+
+foreach($commands as $id => $command) {
+    $application->add($dependencyContainer->get($id));
+}
+
+$application->run();
+```
+
+Execute ```chmod +x bin/console```
+
 ### config/cli-config.php
 This configuration creates configuration for running doctrine console commands.
 Example:
@@ -196,6 +224,8 @@ $response->send();
 
 # How to use the framework
 
+Gist of it is to implement a class, register a service, and inject service wherever. More detailed explanation https://symfony.com/doc/current/components/dependency_injection.html.
+
 ## Creating a resource
 Let's say there's a table in a database you wish to expose as a resource through a REST API.
 
@@ -328,7 +358,7 @@ Specify autofilters on the resource definition:
         id="id" 
         secure="false"
         name="videos" 
-        entity="VideoShare\Entity\Video">
+        entity="App\Entity\Video">
     ...
     <autofilter class="App\Autofilter\PublishedFilter" />
 ```
@@ -364,7 +394,7 @@ Configure resource to use custom autofiller:
         id="id" 
         secure="false"
         name="videos" 
-        entity="VideoShare\Entity\Video">
+        entity="App\Entity\Video">
     ...
     <autofiller class="App\Autofiller\UpdatedAtAutofiller" />
 ```
@@ -414,5 +444,255 @@ api: ...
 Then you can invoke http://app.example.com/index.php/hello/world which should give you ```Hello world!``` response.
 
 ## Commands
+Implement a command.
+
+```php
+// src/Command/HelloCommand.php
+namespace App\Command;
+
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+final class HelloCommand extends Command {
+    protected static $defaultName = 'app:hello';
+
+    protected function configure() {
+        $this->addArgument('who', InputArgument::REQUIRED, '');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output) {
+        $output->writeln(sprintf('Hello %s!', $input->getArgument('who')));
+        return 0;
+    }
+}
+```
+
+Register command as service:
+
+```yaml
+services:
+    ...
+
+    app.command.hello:
+        class: App\Command\HelloCommand
+        tags: [ 'command' ]
+```
+
+Tag ```command``` is required.
+Command can be executed ```bin/console app:hello world```.
 
 ## Security
+
+Framework has a basic security implemented. If some of the resources require user to be authenticated, or a specific permission to be accessed, that can be configured on a resource definition. Just add ```secure="true"``` attribute like this.
+
+```xml
+...
+    <resource 
+        id="id" 
+        secure="true"
+        name="videos" 
+        entity="App\Entity\Video">
+...
+```
+
+Now your resource /videos requires authentication. Authorization is specified by using ```roles``` attribute as such:
+
+```xml
+...
+    <resource 
+        id="id" 
+        secure="true"
+        roles="USER|ADMIN|SUPERADMIN"
+        name="videos" 
+        entity="App\Entity\Video">
+...
+```
+
+Authenticated user must have one of specified roles to be able to access the resource now.
+
+To allow users to authenticate create users table in database with these required fields: username, password, roles.
+
+```sql
+CREATE TABLE `user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `username` varchar(64) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `roles` text DEFAULT NULL COMMENT '(DC2Type:array)'
+)
+```
+
+Create a doctrine mapping and a user entity. User entity must have additional property called ```token``` with corresponding getter and setter.
+User entity must implement ```RestOnPhp\Security\SecureUser```. Final entity should look something like this:
+
+```php
+namespace App\Entity;
+
+use RestOnPhp\Security\SecureUser;
+
+class User implements SecureUser {
+
+    private $id;
+    private $username;
+    private $password;
+    private $roles;
+    private $token;
+
+    public function __construct() {
+        $this->roles = [];
+    }
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function getUsername() {
+        return $this->username;
+    }
+
+    public function getPassword() {
+        return $this->password;
+    }
+
+    public function setUsername($value) {
+        $this->username = $value;
+    }
+
+    public function setPassword($value) {
+        $this->password = $value;
+    }
+
+    public function getToken() {
+        return $this->token;
+    }
+
+    public function setToken($token) {
+        $this->token = $token;
+    }
+
+    public function getRoles() {
+        return $this->roles;
+    }
+
+    public function addRole($role) {
+        $this->roles[] = $role;
+    }
+
+    public function setRoles($value) {
+        $this->roles = $value;
+    }
+
+    public function hasRole($role) {
+        return in_array($role, $this->roles);
+    }
+
+    public function isSuperAdmin() {
+        return $this->hasRole('SUPERADMIN');
+    }
+}
+```
+
+Change ```user_entity``` value in ```config/parameters.yml``` to this user entity. By this example it should be ```App\Entity\User```.
+Creating a user using framework command:
+
+```
+bin/console api:create-user <username> <password>
+```
+
+Framework has build in LoginHandler. User logs in by sending post request to ```/login``` with the following json data:
+
+```json
+{
+    "username": "<username>",
+    "password": "<password>"
+}
+```
+
+Response is a user information, json encoded, with a token property:
+```json
+{
+    "id": 1,
+    "roles": [],
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1OTg5NTQ3NzMsImlkIjoxfQ.duBdfnzY0GEDm1Ok1wLkrt_ix8HkVHGL3W1sGEs6DqU",
+    "username": "user"
+}
+```
+
+### Using a token to authorize
+Depending on what is set as token_bearer and token_key in ```config/parameters.yml``` token is sent either as a ```query_parameter```, ```header```, or ```cookie```.
+For token_key as ```token```, examples in curl are listed.
+
+#### Token bearer "query_parameter"
+
+```
+curl -XGET "https://app.example.com/index.php/videos?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1OTg5NTQ3NzMsImlkIjoxfQ.duBdfnzY0GEDm1Ok1wLkrt_ix8HkVHGL3W1sGEs6DqU"
+```
+
+#### Token bearer "cookie"
+
+```
+curl -XGET -H "Cookie: token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1OTg5NTQ3NzMsImlkIjoxfQ.duBdfnzY0GEDm1Ok1wLkrt_ix8HkVHGL3W1sGEs6DqU" "https://app.example.com/index.php/videos"
+```
+
+#### Token bearer "header"
+
+```
+curl -XGET -H "token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1OTg5NTQ3NzMsImlkIjoxfQ.duBdfnzY0GEDm1Ok1wLkrt_ix8HkVHGL3W1sGEs6DqU" "https://video-share.test.com/index.php/videos"
+```
+
+### Custom auth handler
+
+### Custom authorization service
+
+## Custom Normalizers
+For the purpose of serialization and deserialization Symfony serializer component is used. More details here: https://symfony.com/doc/current/components/serializer.html. RestOnPhp uses default symfony normalizers. Performance issues may rise when trying to serialize doctrine entities which have deep relations to other entities. To avoid that, framework can be configured to use ```RestOnPhp\Normalizer\RelationNormalizer``` which returns ID values instead of whole nested objects. To use custom normalizers entity on which the normalization is applied should implement ```RestOnPhp\Normalizer\Normalizable``` interface, which in turn applies framework default normalizer: ```RestOnPhp\Normalizer\EntityNormalizer```. This normalizer reads resource definition and applies normalizers set on field definitions. To apply this behaviour follow the example.
+
+Implement ```RestOnPhp\Normalizer\Normalizable``` interface:
+
+```php
+// src/Entity/Video.php
+...
+use RestOnPhp\Normalizer\Normalizable;
+
+class Video implements Normalizable {
+...
+```
+
+To implement custom normalizer for any field in resource definition, implement a normalizer class:
+
+```php
+// src/Normalizer/CustomNormalizer.php
+namespace App\Normalizer;
+
+class CustomNormalizer {
+
+    public function normalize($object, $value) {
+        // implement normalization logic here
+    }
+
+    public function denormalize($data, string $type) {
+        // implement denormalization logic here
+    }
+}
+```
+
+Register normalizer as a service:
+
+```yaml
+# config/services/normalizers.yml
+services:
+    app.serializer.normalizer.custom:
+        class: App\Normalizer\CustomNormalizer
+        tags: [ name: symfony.serializer.normalizers ]
+```
+
+Tag ```symfony.serializer.normalizers``` is required.
+Specify on which field to use this normalizer:
+
+```xml
+<field name="customField" type="App\Entity\SomeEntityClass" normalizer="App\Normalizer\CustomNormalizer" />
+```
+
+Custom normalizer will apply normalize method on value before serialization.
+To apply denormalization, entity class must implement ```RestOnPhp\Normalizer\Denormalizable``` interface, then, normalizer will apply denormalize method on value after deserialization.
