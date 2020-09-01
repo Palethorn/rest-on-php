@@ -26,7 +26,7 @@ class Authorization {
         $this->tokenExtractor = $tokenExtractor;
         $this->authHandler = $authHandler;
         $this->sessionStorage = $sessionStorage;
-        $this->request = $this->requestStack->getCurrentRequest();
+        $this->request = $requestStack->getCurrentRequest();
         $this->logger = $logger;
     }
 
