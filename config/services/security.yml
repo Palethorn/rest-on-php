@@ -11,3 +11,4 @@ services:
     api.security.authorization:
         class: RestOnPhp\Security\Authorization
         arguments: [ '@api.metadata.xml',  '@api.security.token_extractor', '@api.handler.auth', '@api.logger' ]
+        public: true
