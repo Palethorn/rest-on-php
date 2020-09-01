@@ -55,6 +55,7 @@ abstract class Kernel implements HttpKernelInterface {
     private $logger;
 
     public function __construct() {
+        $this->checkDirs();
         $this->loadRoutes();
         $this->loadDependencyContainer();
 
@@ -63,8 +64,19 @@ abstract class Kernel implements HttpKernelInterface {
         $this->serializer = $this->dependencyContainer->get('symfony.serializer');
     }
 
+    public function checkDirs() {
+        if(!is_dir($this->getCacheDir())) {
+            mkdir($this->getCacheDir(), 0777, true);
+        }
+
+        if(!is_dir($this->getLogDir())) {
+            mkdir($this->getLogDir(), 0777, true);
+        }
+    }
+
     private function loadDependencyContainer() {
         $cache_dir = $this->getCacheDir();
+        $log_dir = $this->getLogDir();
         $config_dir = $this->getConfigDir();
 
         if(file_exists($cache_dir . '/CompiledDependencyContainer.php')) {
@@ -78,6 +90,8 @@ abstract class Kernel implements HttpKernelInterface {
         $loader = new YamlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
         $loader->load('services.yml');
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
+        $this->dependencyContainer->setParameter('cache_dir', $cache_dir);
+        $this->dependencyContainer->setParameter('log_dir', $log_dir);
         $this->dependencyContainer->compile();
         $dumper = new PhpDumper($this->dependencyContainer);
 
@@ -304,6 +318,10 @@ abstract class Kernel implements HttpKernelInterface {
 
     public function getCacheDir() {
         return $this->getProjectDir() . '/cache';
+    }
+
+    public function getLogDir() {
+        return $this->getProjectDir() . '/log';
     }
 
     public function getConfigDir() {

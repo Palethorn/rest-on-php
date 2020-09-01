@@ -6,18 +6,18 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class CollectionHandler {
-    private $filters;
+    private $autofilters;
     private $request;
     private $metadata;
     private $entityManager;
 
-    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_filters = [], RequestStack $requestStack) {
+    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_autofilters = [], RequestStack $requestStack) {
         $this->entityManager = $entityManager;
         $this->metadata = $metadata;
-        $this->filters = [];
+        $this->autofilters = [];
 
-        foreach($default_filters as $filter) {
-            $this->filters[get_class($filter)] = $filter;
+        foreach($default_autofilters as $autofilter) {
+            $this->autofilters[get_class($autofilter)] = $autofilter;
         }
 
         $this->request = $requestStack->getCurrentRequest();
@@ -25,11 +25,11 @@ class CollectionHandler {
 
     public function handle($entityClass) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $filterMetadata = $this->metadata->getFilterMetadataFor($entityClass);
-        $default_filters = [];
+        $filterMetadata = $this->metadata->getAutofilterMetadataFor($entityClass);
+        $default_autofilters = [];
 
         foreach ($filterMetadata as $filterClass) {
-            $default_filters[] = $this->filters[$filterClass];
+            $default_autofilters[] = $this->autofilters[$filterClass];
         }
 
         $f = $this->request->query->get('filter') ? $this->request->query->get('filter') : array();
@@ -41,7 +41,7 @@ class CollectionHandler {
             'gt' => [],
             'lte' => [],
             'gte' => [],
-            'default' => $default_filters
+            'default' => $default_autofilters
         ];
 
         foreach($f as $field => $filter) {

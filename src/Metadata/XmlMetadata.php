@@ -46,7 +46,7 @@ class XmlMetadata {
 
             $routes = [];
             $fields = [];
-            $filters = [];
+            $autofilters = [];
             $autofillers = [];
 
             foreach($resource->getElementsByTagName('route') as $route_element) {
@@ -79,8 +79,8 @@ class XmlMetadata {
                 );
             }
 
-            foreach($resource->getElementsByTagName('filter') as $field_element) {
-                $filters[] = $field_element->getAttribute('class');
+            foreach($resource->getElementsByTagName('autofilter') as $field_element) {
+                $autofilters[] = $field_element->getAttribute('class');
             }
 
             foreach($resource->getElementsByTagName('autofiller') as $field_element) {
@@ -95,7 +95,7 @@ class XmlMetadata {
                 'roles' => $roles,
                 'routes' => $routes,
                 'fields' => $fields,
-                'filters' => $filters,
+                'autofilters' => $autofilters,
                 'autofillers' => $autofillers
             );
         }
@@ -167,9 +167,9 @@ class XmlMetadata {
         return $resource['id'];
     }
 
-    public function getFilterMetadataFor($entityClass) {
+    public function getAutofilterMetadataFor($entityClass) {
         $resource = $this->getMetadataFor($entityClass);
-        return $resource['filters'];
+        return $resource['autofilters'];
     }
 
     public function getAutofillerMetadataFor($entityClass) {

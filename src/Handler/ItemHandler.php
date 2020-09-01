@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ItemHandler {
     private $request;
-    private $filters;
+    private $autofilters;
     private $autofillers;
     private $metadata;
     private $validator;
@@ -26,12 +26,12 @@ class ItemHandler {
         EntityManager $entityManager, 
         ValidatorInterface $validator, 
         XmlMetadata $metadata, 
-        $default_filters = [], 
+        $default_autofilters = [], 
         $autofillers = [], 
         RequestStack $requestStack
     ) {
 
-        $this->filters = [];
+        $this->autofilters = [];
         $this->autofillers = [];
         $this->metadata = $metadata;
         $this->validator = $validator;
@@ -39,8 +39,8 @@ class ItemHandler {
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
 
-        foreach($default_filters as $filter) {
-            $this->filters[get_class($filter)] = $filter;
+        foreach($default_autofilters as $filter) {
+            $this->autofilters[get_class($filter)] = $filter;
         }
 
         foreach($autofillers as $autofiller) {
@@ -53,11 +53,11 @@ class ItemHandler {
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
 
-        $filterMetadata = $this->metadata->getFilterMetadataFor($entityClass);
-        $default_filters = [];
+        $filterMetadata = $this->metadata->getAutofilterMetadataFor($entityClass);
+        $default_autofilters = [];
 
         foreach ($filterMetadata as $filterClass) {
-            $default_filters[] = $this->filters[$filterClass];
+            $default_autofilters[] = $this->autofilters[$filterClass];
         }
 
         $autofillerMetadata = $this->metadata->getAutofillerMetadataFor($entityClass);
@@ -67,10 +67,10 @@ class ItemHandler {
             $default_autofillers[] = $this->autofillers[$autofillerClass];
         }
 
-        return [ 'item', $this->$method($entityClass, $id, $default_filters, $default_autofillers) ];
+        return [ 'item', $this->$method($entityClass, $id, $default_autofilters, $default_autofillers) ];
     }
 
-    public function get($entityClass, $id, $default_filters) {
+    public function get($entityClass, $id, $default_autofilters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -79,7 +79,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_filters
+            'default' => $default_autofilters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -92,7 +92,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function post($entityClass, $id, $filters, $autofillers) {
+    public function post($entityClass, $id, $autofilters, $autofillers) {
         $data = $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json');
         $errors = $this->validator->validate($data);
 
@@ -116,7 +116,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function put($entityClass, $id, $default_filters, $autofillers = []) {
+    public function put($entityClass, $id, $default_autofilters, $autofillers = []) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -125,7 +125,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_filters
+            'default' => $default_autofilters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -158,7 +158,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function delete($entityClass, $id, $default_filters) {
+    public function delete($entityClass, $id, $default_autofilters) {
         $id_field = $this->metadata->getIdFieldNameFor($entityClass);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -167,7 +167,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_filters
+            'default' => $default_autofilters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -183,7 +183,7 @@ class ItemHandler {
         return '';
     }
 
-    public function patch($entityClass, $id, $default_filters, $autofillers) {
-        return $this->put($entityClass, $id, $default_filters, $autofillers);
+    public function patch($entityClass, $id, $default_autofilters, $autofillers) {
+        return $this->put($entityClass, $id, $default_autofilters, $autofillers);
     }
 }

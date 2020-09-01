@@ -20,7 +20,6 @@ This configuration creates configuration for running doctrine console commands.
 Example:
 
 ```php
-<?php
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 require_once __DIR__ . '/../vendor/autoload.php';
 $parameters = Symfony\Component\Yaml\Yaml::parseFile(__DIR__ . '/parameters.yml');
@@ -63,20 +62,20 @@ Example parameters.yml is included with the project. Productions one should look
 ```yaml
 parameters:
     environment: prod # usually dev, test, staging, production
-    project_name: Video Share Platform # Title for your project
-    project_dir: /srv/video_share # Where your project is located
-    log_dir: /var/log/video_share # Where the application logs go
-    cache_dir: /var/cache/video_share # Where the application writes cache
+    project_name: Application # Title for your project
+    project_dir: /srv/app # Where your project is located
+    log_dir: /var/log/app # Where the application logs go
+    cache_dir: /var/cache/app # Where the application writes cache
     database_host: 127.0.0.1 # Host of your database, if you run mysql in separate containers or on separate servers change this to reflect that
     database_port: 3306 # Standard mysql port, change this if you use non-standard mysql ports or proxies
-    database_name: video_share_database # Mysql database where your tables live
-    database_user: video_share_user # Non-permissive user
-    database_password: video_share_password
-    dns_name: video-share.example.com # Domain under which your application lives
+    database_name: app_database # Mysql database where your tables live
+    database_user: app_user # Non-permissive user
+    database_password: app_password
+    dns_name: app.example.com # Domain under which your application lives
     ssl: true # Does it use https? Used for generating URLs and redirects
     jwt_secret: UvKLsxg2Be5v4Fun # Key with which JWT API tokens are signed
-    entity_namespace: VideoShare\Entity # Namespace for your entities. If you already have entities generated, specify their namespace here
-    user_entity: VideoShare\Entity\User # Entity which will be used for authentication and authorization of users accessing the API
+    entity_namespace: App\Entity # Namespace for your entities. If you already have entities generated, specify their namespace here
+    user_entity: App\Entity\User # Entity which will be used for authentication and authorization of users accessing the API
     token_bearer: cookie # Supports cookie, header, and query_parameter.
     token_key: token # Key which holds token value. Ex. token=eyJhbGciOiJIUzI1NiIsInR5...
 ```
@@ -132,6 +131,28 @@ Directory for holding database migrations. You can change this in ```config/migr
 ### src
 Directory for application PHP code. Put services, handlers, commands, and other PHP classes here.
 
+### src/Kernel.php
+
+Implement framework abstract kernel
+
+```php
+namespace App;
+use RestOnPhp\Kernel as RestOnPhpKernel;
+
+class Kernel extends RestOnPhpKernel {
+    public function getProjectDir() {
+        return __DIR__ . '/..';
+    }
+}
+
+```
+
+### cache
+Framework writes compiled parts as cache files into this directory. Default path is <project_root>/cache. It can be changed by overriding Kernel::getCacheDir in src/Kernel.php.
+
+### log
+Framework writes log files into this directory. Default path is <project_root>/log. It can be changed by overriding Kernel::getLogDir in src/Kernel.php.
+
 ### web
 Keep your publicly accesible static files here. index.php resides here also.
 
@@ -139,7 +160,6 @@ Keep your publicly accesible static files here. index.php resides here also.
 Entry point for your application.
 
 ```php
-<?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Kernel;
@@ -157,7 +177,6 @@ $response->send();
 For dev purposes and debugging you can also create index_dev.php which enables verbose error reporting and debug component.
 
 ```php
-<?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Kernel;
@@ -174,3 +193,226 @@ $kernel = new Kernel('dev', true);
 $response = $kernel->handle($request);
 $response->send();
 ```
+
+# How to use the framework
+
+## Creating a resource
+Let's say there's a table in a database you wish to expose as a resource through a REST API.
+
+```sql
+CREATE TABLE video(
+    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255),
+    filepath TEXT,
+    url TEXT,
+    published TINYINT(1) DEFAULT 0,
+    container VARCHAR(16),
+    audio_codec VARCHAR(32),
+    video_codec VARCHAR(32),
+    checksum VARCHAR(128),
+    created_at datetime,
+    updated_at datetime,
+    published_at datetime NULL,
+    tags TEXT NULL COMMENT "(DC2Type:array)";
+);
+```
+
+You have a doctrine mapping file, Video.orm.xml
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping 
+    xmlns:ns="http://doctrine-project.org/schemas/orm/doctrine-mapping" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="App\Entity\Video" table="video">
+    <id name="id" type="integer" column="id">
+      <generator strategy="IDENTITY"/>
+    </id>
+
+    <field name="filename" column="filename" type="string" />
+    <field name="filepath" column="filepath" type="text" />
+    <field name="url" column="url" type="text" />
+    <field name="published" column="published" type="boolean" />
+    <field name="container" column="container" type="string" />
+    <field name="audioCodec" column="audio_codec" type="string" />
+    <field name="videoCodec" column="video_codec" type="string" />
+    <field name="checksum" column="checksum" type="string" />
+    <field name="createdAt" column="created_at" type="datetime" />
+    <field name="updatedAt" column="updated_at" type="datetime" />
+    <field name="publishedAt" column="published_at" type="datetime" />
+    <field name="tags" column="tags" type="array" />
+  </entity>
+</doctrine-mapping>
+```
+
+Specify the default repository class ```<entity repository-class="RestOnPhp\Repository\DefaultRepository" name="App\Entity\Video" table="video">...```
+
+Doctrine entity exists.
+
+```php
+// src/Entity/Video
+namespace App\Entity;
+
+class Video {
+    ...
+}
+```
+
+Create a resource config in config/resources.xml under mapping element.
+
+```xml
+<resource 
+    id="id" 
+    secure="false"
+    name="videos" 
+    entity="App\Entity\Video">
+
+    <route name="getCollection" method="GET" path="/videos" ></route>
+    <route name="getItem" method="GET" path="/videos/{id}" ></route>
+    <route name="create" method="POST" path="/videos" ></route>
+    <route name="update" method="PATCH" path="/videos/{id}" ></route>
+    <route name="replace" method="PUT" path="/videos/{id}" ></route>
+
+    <field name="id" type="integer" />
+    <field name="filename" type="string" />
+    <field name="filepath" type="text" />
+    <field name="url" type="text" />
+    <field name="published" type="boolean" />
+    <field name="container" type="string" />
+    <field name="audioCodec" type="string" />
+    <field name="videoCodec" type="string" />
+    <field name="checksum" type="string" />
+    <field name="createdAt" type="datetime" />
+    <field name="updatedAt" type="datetime" />
+    <field name="publishedAt" type="datetime" />
+    <field name="tags" type="array" />
+
+</resource>
+```
+
+Resource is now available on http://app.example.com/index.php/videos. You should also be able to see the listing on http://app.example.com/index.php/docs.json
+
+## Autofilters
+Let's say that you only want to list published videos.
+Implement a class
+
+```php
+// src/Autofilters/PublishedFilter.php
+namespace App\Autofilters;
+use Doctrine\ORM\QueryBuilder;
+
+class PublishedAutofilter {
+    public function filter(QueryBuilder $queryBuilder) {
+        $queryBuilder->andWhere('r.published = :published');
+        $queryBuilder->setParameter('published', 1);
+        return $queryBuilder
+    }
+}
+```
+
+Register service:
+
+```yaml
+# config/services/filters.yml
+services:
+    App\Autofilter\PublishedAutofilter:
+        tags: [ name: api.autofilters.default ]
+```
+
+Tag ```api.autofilters.default``` is required.
+Specify autofilters on the resource definition:
+
+```xml
+    <resource 
+        id="id" 
+        secure="false"
+        name="videos" 
+        entity="VideoShare\Entity\Video">
+    ...
+    <autofilter class="App\Autofilter\PublishedFilter" />
+```
+
+## Autofillers
+Autofillers set property values based on a custom logic before changes to database are applied. Example, updatedAt. Create a class:
+
+```php
+// src/Autofiller/UpdatedAtAutofiller
+namespace App\Autofiller;
+
+class UpdatedAtAutofiller {
+    public function fill($object) {
+        $object->setUpdatedAt(new \DateTime());
+    }
+}
+```
+
+Register service:
+
+```yaml
+# config/services/autofillers.yml
+services:
+    App\Autofiller\UpdatedAtAutofiller:
+        tags: [ name: api.autofillers.default ]
+```
+
+Tag ```api.autofillers.default``` is required.
+Configure resource to use custom autofiller:
+
+```xml
+    <resource 
+        id="id" 
+        secure="false"
+        name="videos" 
+        entity="VideoShare\Entity\Video">
+    ...
+    <autofiller class="App\Autofiller\UpdatedAtAutofiller" />
+```
+
+## Custom Handlers
+Sometimes a conventional controller is required which doesn't quite fit with the data model. Although framework doesn't support normal MVC controllers, it supports request handlers. CRUD operations are executed by default ones built in framework. Those are ```CollectionHandler``` and ```ItemHandler```. They implement all basic functionality that is required for the API to operate (database querying, pagination, filtering). You can implement your own handler for a custom custom logic and custom response.
+
+Create a handler class:
+
+```php
+// src/Handler/HelloHandler.php
+namespace App\Handler;
+use Symfony\Component\HttpFoundation\Response;
+
+class HelloHandler {
+    public function handle($who) {
+        return new Response(sprintf('Hello %s!', $who), 200, [
+            'Content-Type' => 'text/plain'
+        ]);
+    }
+}
+```
+
+Register a service:
+
+```yaml
+# config/services/handlers.yml
+services:
+    app.handler.hello:
+        class: App\Handler\HelloHandler
+        public: true
+```
+
+Service must be public.
+Register a route on top:
+
+```yaml
+# config/routing.yml
+hello:
+    path: '/hello/{who}'
+    methods: [ GET ]
+    controller: app.handler.hello
+
+api: ...
+```
+
+Then you can invoke http://app.example.com/index.php/hello/world which should give you ```Hello world!``` response.
+
+## Commands
+
+## Security
