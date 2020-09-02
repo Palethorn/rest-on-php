@@ -7,6 +7,11 @@
         https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
     <services>
+        <service id="api.command.create_resource" class="RestOnPhp\Command\CreateResourceCommand">
+            <call method="setConfigDir"><argument>%project_dir%/config</argument></call>
+            <call method="setEntityManager"><argument type="service" id="doctrine.orm.entity_manager" /></call>
+            <tag>command</tag>
+        </service>
         <service id="api.command.clear_cache" class="RestOnPhp\Command\ClearCacheCommand">
             <call method="setCacheDir"><argument>%cache_dir%</argument></call>
             <tag>command</tag>
