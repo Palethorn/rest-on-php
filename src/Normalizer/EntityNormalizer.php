@@ -16,7 +16,7 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
     private $metadata;
     private $normalizers = [];
 
-    public function __construct(array $defaultContext = [], XmlMetadata $metadata, EntityManager $entityManager, $normalizers) {
+    public function __construct(array $defaultContext = [], XmlMetadata $metadata, EntityManager $entityManager, $normalizers = []) {
         foreach($normalizers as $normalizer) {
             $this->normalizers[get_class($normalizer)] = $normalizer;
         }

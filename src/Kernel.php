@@ -59,7 +59,7 @@ abstract class Kernel implements HttpKernelInterface {
 
         $this->logger = $this->dependencyContainer->get('api.logger');
         $this->metadata = $this->dependencyContainer->get('api.metadata.xml');
-        $this->serializer = $this->dependencyContainer->get('symfony.serializer');
+        $this->serializer = $this->dependencyContainer->get('api.serializer');
     }
 
     public function checkDirs() {
@@ -86,7 +86,7 @@ abstract class Kernel implements HttpKernelInterface {
         $this->dependencyContainer = new ContainerBuilder();
         $this->dependencyContainer->addCompilerPass(new LoggerPass());
         $loader = new XmlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
-        $loader->load('services.yml');
+        $loader->load('services.xml');
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
         $this->dependencyContainer->setParameter('cache_dir', $cache_dir);
         $this->dependencyContainer->setParameter('log_dir', $log_dir);
@@ -109,7 +109,7 @@ abstract class Kernel implements HttpKernelInterface {
 
         if(!file_exists($cache_dir . '/routes.php')) {
             $route_loader = new RoutingXmlFileLoader(new FileLocator($config_dir));
-            $this->routes = $route_loader->load('routing.yml');
+            $this->routes = $route_loader->load('routing.xml');
             $this->routes = (new CompiledUrlMatcherDumper($this->routes))->getCompiledRoutes();
             file_put_contents($cache_dir . '/routes.php', sprintf("<?php\nreturn %s;\n", var_export($this->routes, true)));
         } else {

@@ -28,17 +28,17 @@
             <tag>api.serializer.normalizers</tag>
         </service>
 
+        <service id="api.serializer.normalizer.relation" class="RestOnPhp\Normalizer\RelationNormalizer">
+            <argument type="service" id="api.metadata.xml"></argument>
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <tag>app.serializer.normalizers</tag>
+        </service>
+
         <service id="api.serializer.normalizer.entity" class="RestOnPhp\Normalizer\EntityNormalizer">
             <argument type="collection"></argument>
             <argument type="service" id="api.metadata.xml"></argument>
             <argument type="service" id="doctrine.orm.entity_manager"></argument>
-            <argument type="tagged_iterator" id="api.serializer.normalizers"></argument>
-            <tag>api.serializer.normalizers</tag>
-        </service>
-
-        <service id="api.serializer.normalizer.relation" class="RestOnPhp\Normalizer\RelationNormalizer">
-            <argument type="service" id="api.metadata.xml"></argument>
-            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <argument type="tagged_iterator" tag="app.serializer.normalizers"></argument>
             <tag>api.serializer.normalizers</tag>
         </service>
 

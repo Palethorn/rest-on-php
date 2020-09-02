@@ -684,10 +684,10 @@ Register normalizer as a service:
 services:
     app.serializer.normalizer.custom:
         class: App\Normalizer\CustomNormalizer
-        tags: [ name: symfony.serializer.normalizers ]
+        tags: [ name: app.serializer.normalizers ]
 ```
 
-Tag ```symfony.serializer.normalizers``` is required.
+Tag ```app.serializer.normalizers``` is required.
 Specify on which field to use this normalizer:
 
 ```xml

@@ -32,15 +32,15 @@
             <argument>%cache_dir%</argument>
         </service>
 
-        <service id="symfony.validator_builder" class="Symfony\Component\Validator\ValidatorBuilder">
+        <service id="api.validator_builder" class="Symfony\Component\Validator\ValidatorBuilder">
             <factory class="Symfony\Component\Validator\Validation" method="createValidatorBuilder"></factory>
             <call method="addXmlMapping">
                 <argument>%project_dir%/config/validation.xml</argument>
             </call>
         </service>
 
-        <service id="symfony.validator" class="Symfony\Component\Validator\Validator\RecursiveValidator">
-            <factory service="symfony.validator_builder" method="getValidator"></factory>
+        <service id="api.validator" class="Symfony\Component\Validator\Validator\RecursiveValidator">
+            <factory service="api.validator_builder" method="getValidator"></factory>
         </service>
     </services>
 </container>
