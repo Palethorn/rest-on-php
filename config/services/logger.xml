@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="api.logger.formatter.json" class="Monolog\Formatter\JsonFormatter">
+            <tag>api.logger.formatter</tag>
+        </service>
+
+        <service id="api.logger.handler.stream" class="Monolog\Handler\StreamHandler">
+            <argument>%log_dir%/app.log</argument>
+            <argument>200</argument>
+            <call method="setFormatter"><argument type="service" id="api.logger.formatter.json"></argument></call>
+            <tag>api.logger.handler</tag>
+        </service>
+
+        <service id="api.logger" class="Monolog\Logger" public="true">
+            <argument>api</argument>
+        </service>
+    </services>
+</container>

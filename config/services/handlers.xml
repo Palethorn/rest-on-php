@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="api.handler.collection" class="RestOnPhp\Handler\CollectionHandler" public="true">
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <argument type="service" id="dapi.metadata.xml"></argument>
+            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
+            <argument type="service" id="api.request.stack"></argument>
+        </service>
+        <service id="api.handler.item" class="RestOnPhp\Handler\ItemHandler" public="true">
+            <argument type="service" id="symfony.serializer"></argument>
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <argument type="service" id="symfony.validator"></argument>
+            <argument type="service" id="api.metadata.xml"></argument>
+            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
+            <argument type="tagged_iterator" tag="api.autofillers.default"></argument>
+            <argument type="service" tag="api.request.stack"></argument>
+        </service>
+        <service id="api.handler.docs" class="RestOnPhp\Handler\DocsHandler" public="true">
+            <argument type="service" id="api.metadata.xml"></argument>
+        </service>
+        <service id="api.handler.auth" class="RestOnPhp\Handler\AuthHandler" public="true">
+            <argument type="service" id="symfony.serializer"></argument>
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <argument>%jwt_secret%</argument>
+            <argument>%user_entity%</argument>
+            <argument type="service" id="api.request.stack"></argument>
+        </service>
+    </services>
+</container>

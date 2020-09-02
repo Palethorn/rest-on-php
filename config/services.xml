@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <imports>
+        <import resource="services/*.xml"/>
+    </imports>
+
+    <services>
+        <service id="doctrine.factory.entity_manager" class="RestOnPhp\Factory\DoctrineEntityManagerFactory" />
+
+        <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager">
+            <factory service="doctrine.factory.entity_manager" method="create" />
+            <argument>%database_host%</argument>
+            <argument>%database_port%</argument>
+            <argument>%database_name%</argument>
+            <argument>%database_user%</argument>
+            <argument>%database_password%</argument>
+            <argument>%project_dir%/config</argument>
+            <argument>%cache_dir%</argument>
+            <argument>%entity_namespace%</argument>
+        </service>
+
+        <service id="api.request.stack" class="Symfony\Component\HttpFoundation\RequestStack" public="true" />
+
+        <service id="api.metadata.xml" class="RestOnPhp\Metadata\XmlMetadata" public="true">
+            <argument>%config_dir%/resources.xml</argument>
+            <argument>%cache_dir%</argument>
+        </service>
+
+        <service id="symfony.validator_builder" class="Symfony\Component\Validator\ValidatorBuilder">
+            <factory class="Symfony\Component\Validator\Validation" method="createValidatorBuilder"></factory>
+            <call method="addXmlMapping">
+                <argument>%project_dir%/config/validation.xml</argument>
+            </call>
+        </service>
+
+        <service id="symfony.validator" class="Symfony\Component\Validator\Validator\RecursiveValidator">
+            <factory service="symfony.validator_builder" method="getValidator"></factory>
+        </service>
+    </services>
+</container>

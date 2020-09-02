@@ -4,9 +4,9 @@ namespace RestOnPhp;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
+use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Loader\YamlFileLoader as LoaderYamlFileLoader;
+use Symfony\Component\Routing\Loader\XmlFileLoader as RoutingXmlFileLoader;
 use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
 use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
 use Symfony\Component\Routing\RequestContext;
@@ -85,7 +85,7 @@ abstract class Kernel implements HttpKernelInterface {
 
         $this->dependencyContainer = new ContainerBuilder();
         $this->dependencyContainer->addCompilerPass(new LoggerPass());
-        $loader = new YamlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
+        $loader = new XmlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
         $loader->load('services.yml');
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
         $this->dependencyContainer->setParameter('cache_dir', $cache_dir);
@@ -108,7 +108,7 @@ abstract class Kernel implements HttpKernelInterface {
         $config_dir = $this->getConfigDir();
 
         if(!file_exists($cache_dir . '/routes.php')) {
-            $route_loader = new LoaderYamlFileLoader(new FileLocator($config_dir));
+            $route_loader = new RoutingXmlFileLoader(new FileLocator($config_dir));
             $this->routes = $route_loader->load('routing.yml');
             $this->routes = (new CompiledUrlMatcherDumper($this->routes))->getCompiledRoutes();
             file_put_contents($cache_dir . '/routes.php', sprintf("<?php\nreturn %s;\n", var_export($this->routes, true)));

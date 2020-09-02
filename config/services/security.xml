@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="api.security.session_storage" class="RestOnPhp\Session\JwtSessionStorage" public="true"></service>
+        <service id="api.security.token_extractor" class="RestOnPhp\Token\Extractor" public="true">
+            <argument>%token_bearer%</argument>
+            <argument>%token_key%</argument>
+        </service>
+
+        <service id="api.security.authorization" class="RestOnPhp\Security\Authorization" public="true">
+            <argument type="service" id="api.metadata.xml"></argument>
+            <argument type="service" id="api.security.token_extractor"></argument>
+            <argument type="service" id="api.handler.auth"></argument>
+            <argument type="service" id="api.security.session_storage"></argument>
+            <argument type="service" id="api.request.stack"></argument>
+            <argument type="service" id="api.logger"></argument>
+        </service>
+    </services>
+</container>
