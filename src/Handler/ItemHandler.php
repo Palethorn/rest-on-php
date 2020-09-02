@@ -49,6 +49,12 @@ class ItemHandler {
     }
 
     public function handle($entityClass, $id = null) {
+        $entityMetadata = $this->entityManager->getClassMetadata($entityClass);
+
+        if(!$entityMetadata->customRepositoryClassName) {
+            $entityMetadata->setCustomRepositoryClass('RestOnPhp\Repository\DefaultRepository');
+        }
+
         $method = $this->request->getMethod();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);

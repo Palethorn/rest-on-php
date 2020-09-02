@@ -276,8 +276,6 @@ You have a doctrine mapping file, Video.orm.xml
 </doctrine-mapping>
 ```
 
-Specify the default repository class ```<entity repository-class="RestOnPhp\Repository\DefaultRepository" name="App\Entity\Video" table="video">...```
-
 Doctrine entity exists.
 
 ```php
@@ -289,7 +287,13 @@ class Video {
 }
 ```
 
-Create a resource config in config/resources.xml under mapping element.
+You can run a command to create default resource definition in config/resources.xml, then edit the definition by need. Command throws exception if the resource definition already exists. It will not modify any existing resource definitions.
+```
+bin/console api:create-resource App\Entity\Video
+```
+
+
+To create a resource definition manually, edit config/resources.xml under mapping element, and add new resource element:
 
 ```xml
 <resource 
@@ -303,6 +307,7 @@ Create a resource config in config/resources.xml under mapping element.
     <route name="create" method="POST" path="/videos" ></route>
     <route name="update" method="PATCH" path="/videos/{id}" ></route>
     <route name="replace" method="PUT" path="/videos/{id}" ></route>
+    <route name="delete" method="DELETE" path="/videos/{id}" ></route>
 
     <field name="id" type="integer" />
     <field name="filename" type="string" />

@@ -72,6 +72,12 @@ class CollectionHandler {
             $id_field => 'ASC'
         );
 
+        $entityMetadata = $this->entityManager->getClassMetadata($entityClass);
+
+        if(!$entityMetadata->customRepositoryClassName) {
+            $entityMetadata->setCustomRepositoryClass('RestOnPhp\Repository\DefaultRepository');
+        }
+
         /**
          * @var \Doctrine\ORM\EntityRepository $entityRepository
          */
