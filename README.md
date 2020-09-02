@@ -1,6 +1,6 @@
 # Introduction
-rest-on-php is a REST API framework built on top of symfony components. This document explains how to set up rest-on-php from scratch with minimal explanation. You can find more detailed documentation for each component here https://symfony.com/components.
-rest-on-php uses Doctrine ORM/DBAL for database access. You can find the documentation here https://www.doctrine-project.org/projects/doctrine-orm/en/current/tutorials/getting-started.html.
+rest-on-php is a REST API framework built on top of symfony components. This document explains how to set up rest-on-php from scratch with minimal explanation. Find more detailed documentation for each component here https://symfony.com/components.
+rest-on-php uses Doctrine ORM/DBAL for database access. Find the documentation here https://www.doctrine-project.org/projects/doctrine-orm/en/current/tutorials/getting-started.html.
 
 To start developing right away install rest-on-php-project which has base environment already in place.
 ```
@@ -23,20 +23,10 @@ Enable executing symfony commands.
 <?php
 require __DIR__ . '/../vendor/autoload.php';
 
-use Symfony\Component\Config\FileLocator;
-use Symfony\Component\Console\Application;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use RestOnPhp\Kernel;
 
-$dependencyContainer = new ContainerBuilder();
-$loader = new YamlFileLoader($dependencyContainer, new FileLocator(__DIR__ . '/../config'));
-$loader->load('services.yml');
-$commands = $dependencyContainer->findTaggedServiceIds('command');
-$application = new Application();
-
-foreach($commands as $id => $command) {
-    $application->add($dependencyContainer->get($id));
-}
+$kernel = new Kernel('cli', true);
+$application = $kernel->getDependencyContainer()->get('api.command.application');
 
 $application->run();
 ```
@@ -49,11 +39,15 @@ Example:
 
 ```php
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
-require_once __DIR__ . '/../vendor/autoload.php';
-$parameters = Symfony\Component\Yaml\Yaml::parseFile(__DIR__ . '/parameters.yml');
-$parameters = $parameters['parameters'];
+use RestOnPhp\Kernel;
 
-// replace with mechanism to retrieve EntityManager in your app
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$kernel = new Kernel('cli', false);
+$dependencyContainer = $kernel->getDependencyContainer();
+$parameters = $dependencyContainer->getParameterBag()->all();
+
+// replace with mechanism to retrieve EntityManager
 $doctrineEntityManagerFactory = new RestOnPhp\Factory\DoctrineEntityManagerFactory();
 $entityManager = $doctrineEntityManagerFactory->create(
     $parameters['database_host'],
@@ -67,10 +61,11 @@ $entityManager = $doctrineEntityManagerFactory->create(
 );
 
 return ConsoleRunner::createHelperSet($entityManager);
+
 ```
 
 ### config/migrations.yml
-If you want doctrine migrations support then include this file. Modify to suit your needs. Detailed documentation here https://www.doctrine-project.org/projects/doctrine-migrations/en/2.2/reference/configuration.html
+Include this file for migrations support. Modify to suit the application needs. Detailed documentation here https://www.doctrine-project.org/projects/doctrine-migrations/en/2.2/reference/configuration.html
 
 ```yaml
 name: "Migrations"
@@ -84,25 +79,46 @@ all_or_nothing: true
 check_database_platform: true
 ```
 
-### config/parameters.yml
-Example parameters.yml is included with the project. Productions one should look something like this:
+### config/parameters.xml
+Example parameters.xml is included with the project. Productions one should look something like this:
 
-```yaml
-parameters:
-    environment: prod # usually dev, test, staging, production
-    project_name: Application # Title for your project
-    database_host: 127.0.0.1 # Host of your database, if you run mysql in separate containers or on separate servers change this to reflect that
-    database_port: 3306 # Standard mysql port, change this if you use non-standard mysql ports or proxies
-    database_name: app_database # Mysql database where your tables live
-    database_user: app_user # Non-permissive user
-    database_password: app_password
-    dns_name: app.example.com # Domain under which your application lives
-    ssl: true # Does it use https? Used for generating URLs and redirects
-    jwt_secret: UvKLsxg2Be5v4Fun # Key with which JWT API tokens are signed
-    entity_namespace: App\Entity # Namespace for your entities. If you already have entities generated, specify their namespace here
-    user_entity: App\Entity\User # Entity which will be used for authentication and authorization of users accessing the API
-    token_bearer: cookie # Supports cookie, header, and query_parameter.
-    token_key: token # Key which holds token value. Ex. token=eyJhbGciOiJIUzI1NiIsInR5...
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:framework="http://symfony.com/schema/dic/symfony"
+xsi:schemaLocation="http://symfony.com/schema/dic/services
+    https://symfony.com/schema/dic/services/services-1.0.xsd
+    http://symfony.com/schema/dic/symfony
+    https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+    <parameters>
+    <!-- # usually dev, test, staging, production -->
+    <parameter key="environment">prod</parameter>
+    <!-- # Title for the project -->
+    <parameter key="project_name">Application</parameter>
+    <!-- # Host of application database. If mysql runs in separate containers or on separate servers change this to reflect that -->
+    <parameter key="database_host">127.0.0.1</parameter>
+    <!-- # Standard mysql port, change this if database uses non-standard ports or proxies -->
+    <parameter key="database_port">3306</parameter>
+    <!-- # Mysql database where database tables live -->
+    <parameter key="database_name">app_database</parameter>
+    <!-- # Non-permissive user -->
+    <parameter key="database_user">app_user</parameter>
+    <parameter key="database_password">app_password
+    <!-- # Domain under which the application lives -->
+    <parameter key="dns_name">app.example.com</parameter>
+    <!-- # Does it use https? Used for generating URLs and redirects -->
+    <parameter key="ssl">true</parameter>
+    <!-- # Key with which JWT API tokens are signed -->
+    <parameter key="jwt_secret">UvKLsxg2Be5v4Fun</parameter>
+    <!-- # Namespace for doctirne entities. Specify namespace here for preexisting entities -->
+    <parameter key="entity_namespace">App\Entity</parameter>
+    <!-- # Entity which will be used for authentication and authorization of users accessing the API -->
+    <parameter key="user_entity">App\Entity\User</parameter>
+    <!-- # Supports cookie, header, and query_parameter. -->
+    <parameter key="token_bearer">cookie</parameter>
+    <!-- # Key which holds token value. Ex. token=eyJhbGciOiJIUzI1NiIsInR5... -->
+    <parameter key="token_key">token</parameter>
 ```
 
 ### config/resources.xml
@@ -118,40 +134,50 @@ Definition of API resources. Empty file for now:
 </mapping>
 ```
 
-### config/routing.yml
+### config/routing.xml
 Import framework routing table:
 
-```yaml
-api:
-    resource: '../vendor/palethorn/rest-on-php/config/routing.yml'
-    prefix: /
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<routes xmlns="http://symfony.com/schema/routing"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/routing
+        https://symfony.com/schema/routing/routing-1.0.xsd">
+    <import resource="../vendor/palethorn/rest-on-php/config/routing.xml" prefix="/"></import>
+</routes>
 ```
 
-### config/services.yml
+### config/services.xml
 Default service loading. Not recommended to alter this file.
 
-```yaml
-imports:
-    - { resource: parameters.yml }
-    - { resource: '../vendor/palethorn/rest-on-php/config/services.yml' }
-    - { resource: services/*.yml }
-
-services:
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+    <imports>
+        <import resource="../vendor/palethorn/rest-on-php/config/services.xml" />
+        <import resource="parameters.xml" />
+        <import resource="services/*.xml" />
+    </imports>
+</container>
 ```
 
 ### config/services
-Directory for all your additional service definitions. You can have for example:
-- config/services/handlers.yml
-- config/services/commands.yml
-- config/services/filters.yml
-- config/services/autofillers.yml
-- config/services/normalizers.yml
+Directory for all additional service definitions. Example definition files:
+- config/services/handlers.xml
+- config/services/commands.xml
+- config/services/filters.xml
+- config/services/autofillers.xml
+- config/services/normalizers.xml
 
 ### config/doctrine_mapping
 Directory for holding doctrine mapping files
 
 ### doctrine_migrations
-Directory for holding database migrations. You can change this in ```config/migrations.yml``` under ```migrations_directory``` key.
+Directory for holding database migrations. It's possible to change this directory in ```config/migrations.yml``` under ```migrations_directory``` key if required.
 
 ### src
 Directory for application PHP code. Put services, handlers, commands, and other PHP classes here.
@@ -190,7 +216,7 @@ class Kernel extends RestOnPhpKernel {
 
 All these paths can be used as parameters in dependency container.
 
-Edit web/index.php to use derived class.
+Edit web/index.php, config/cli-config.php and bin/console to use derived class.
 
 ### cache
 Framework writes compiled parts as cache files into this directory. Default path is <project_root>/cache. It can be changed by overriding Kernel::getCacheDir in src/Kernel.php.
@@ -199,15 +225,15 @@ Framework writes compiled parts as cache files into this directory. Default path
 Framework writes log files into this directory. Default path is <project_root>/log. It can be changed by overriding Kernel::getLogDir in src/Kernel.php.
 
 ### web
-Keep your publicly accesible static files here. index.php resides here also.
+Keep publicly accesible static files here. index.php resides here also.
 
 ### web/index.php
-Entry point for your application.
+Entry point for the application.
 
 ```php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Kernel;
+use RestOnPhp\Kernel;
 use Symfony\Component\ErrorHandler\ErrorHandler;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -219,12 +245,12 @@ $response = $kernel->handle($request);
 $response->send();
 ```
 
-For dev purposes and debugging you can also create index_dev.php which enables verbose error reporting and debug component.
+For dev purposes and debugging index_dev.php can also be created, which enables verbose error reporting and debug component.
 
 ```php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Kernel;
+use RestOnPhp\Kernel;
 use Symfony\Component\ErrorHandler\Debug;
 use Symfony\Component\ErrorHandler\ErrorHandler;
 use Symfony\Component\HttpFoundation\Request;
@@ -244,7 +270,7 @@ $response->send();
 Gist of it is to implement a class, register a service, and inject service wherever. More detailed explanation https://symfony.com/doc/current/components/dependency_injection.html.
 
 ## Creating a resource
-Let's say there's a table in a database you wish to expose as a resource through a REST API.
+Let's say there's a table in a database we wish to expose as a resource through a REST API.
 
 ```sql
 CREATE TABLE video(
@@ -264,7 +290,7 @@ CREATE TABLE video(
 );
 ```
 
-You have a doctrine mapping file, Video.orm.xml
+A doctrine mapping file exists, Video.orm.xml
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -304,7 +330,7 @@ class Video {
 }
 ```
 
-You can run a command to create default resource definition in config/resources.xml, then edit the definition by need. Command throws exception if the resource definition already exists. It will not modify any existing resource definitions.
+A command exists to create default resource definition in config/resources.xml. Definition can be modified by need. Command throws exception if the resource definition already exists. It will not modify any existing resource definitions.
 ```
 bin/console api:create-resource App\Entity\Video
 ```
@@ -343,10 +369,10 @@ To create a resource definition manually, edit config/resources.xml under mappin
 </resource>
 ```
 
-Resource is now available on http://app.example.com/index.php/videos. You should also be able to see the listing on http://app.example.com/index.php/docs.json
+Resource is now available on http://app.example.com/index.php/videos. Resource definition should also be visible here http://app.example.com/index.php/docs.json
 
 ## Autofilters
-Let's say that you only want to list published videos.
+Let's say that we only want to list published videos.
 Implement a class
 
 ```php
@@ -365,11 +391,18 @@ class PublishedAutofilter {
 
 Register service:
 
-```yaml
-# config/services/filters.yml
-services:
-    App\Autofilter\PublishedAutofilter:
-        tags: [ name: api.autofilters.default ]
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="App\Autofilter\PublishedAutofilter" class="App\Autofilter\PublishedAutofilter"><tag>api.autofilters.default</tag></service>
+    </services>
+</container>
 ```
 
 Tag ```api.autofilters.default``` is required.
@@ -401,11 +434,20 @@ class UpdatedAtAutofiller {
 
 Register service:
 
-```yaml
-# config/services/autofillers.yml
-services:
-    App\Autofiller\UpdatedAtAutofiller:
-        tags: [ name: api.autofillers.default ]
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="App\Autofiller\UpdatedAtAutofiller" class="App\Autofiller\UpdatedAtAutofiller">
+            <tag>api.autofillers.default</tag>
+        </service>
+    </services>
+</container>
 ```
 
 Tag ```api.autofillers.default``` is required.
@@ -422,7 +464,7 @@ Configure resource to use custom autofiller:
 ```
 
 ## Custom Handlers
-Sometimes a conventional controller is required which doesn't quite fit with the data model. Although framework doesn't support normal MVC controllers, it supports request handlers. CRUD operations are executed by default ones built in framework. Those are ```CollectionHandler``` and ```ItemHandler```. They implement all basic functionality that is required for the API to operate (database querying, pagination, filtering). You can implement your own handler for a custom custom logic and custom response.
+Sometimes a conventional controller is required which doesn't quite fit with the data model. Although framework doesn't support normal MVC controllers, it supports request handlers. CRUD operations are executed by default ones built in framework. Those are ```CollectionHandler``` and ```ItemHandler```. They implement all basic functionality that is required for the API to operate (database querying, pagination, filtering). It's possible to implement a handler for a custom logic and custom response.
 
 Create a handler class:
 
@@ -442,28 +484,38 @@ class HelloHandler {
 
 Register a service:
 
-```yaml
-# config/services/handlers.yml
-services:
-    app.handler.hello:
-        class: App\Handler\HelloHandler
-        public: true
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="app.handler.hello" class="App\Handler\HelloHandler" public="true" />
+    </services>
+</container>
 ```
 
 Service must be public.
 Register a route on top:
 
-```yaml
-# config/routing.yml
-hello:
-    path: '/hello/{who}'
-    methods: [ GET ]
-    controller: app.handler.hello
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<routes xmlns="http://symfony.com/schema/routing"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/routing
+        https://symfony.com/schema/routing/routing-1.0.xsd">
 
-api: ...
+    <route id="hello" path="/hello/{who}"
+        controller="app.handler.hello"
+        methods="GET"/>
+        ...
+</routes>
 ```
 
-Then you can invoke http://app.example.com/index.php/hello/world which should give you ```Hello world!``` response.
+Invoking http://app.example.com/index.php/hello/world should give ```Hello world!``` response.
 
 ## Commands
 Implement a command.
@@ -493,13 +545,22 @@ final class HelloCommand extends Command {
 
 Register command as service:
 
-```yaml
-services:
-    ...
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
-    app.command.hello:
-        class: App\Command\HelloCommand
-        tags: [ 'command' ]
+    <services>
+        ...
+        <service id="app.command.hello" class="App\Command\HelloCommand">
+            <tag>command</tag>
+        </service>
+        ...
+    </services>
+</container>
 ```
 
 Tag ```command``` is required.
@@ -519,7 +580,7 @@ Framework has a basic security implemented. If some of the resources require use
 ...
 ```
 
-Now your resource /videos requires authentication. Authorization is specified by using ```roles``` attribute as such:
+Now the resource /videos requires authentication. Authorization is specified by using ```roles``` attribute as such:
 
 ```xml
 ...
@@ -615,7 +676,7 @@ class User implements SecureUser {
 }
 ```
 
-Change ```user_entity``` value in ```config/parameters.yml``` to this user entity. By this example it should be ```App\Entity\User```.
+Change ```user_entity``` value in ```config/parameters.xml``` to this user entity. By this example it should be ```App\Entity\User```.
 Creating a user using framework command:
 
 ```
@@ -642,7 +703,7 @@ Response is a user information, json encoded, with a token property:
 ```
 
 ### Using a token to authorize
-Depending on what is set as token_bearer and token_key in ```config/parameters.yml``` token is sent either as a ```query_parameter```, ```header```, or ```cookie```.
+Depending on what is set as token_bearer and token_key in ```config/parameters.xml``` token is sent either as a ```query_parameter```, ```header```, or ```cookie```.
 For token_key as ```token```, examples in curl are listed.
 
 #### Token bearer "query_parameter"
@@ -701,12 +762,20 @@ class CustomNormalizer {
 
 Register normalizer as a service:
 
-```yaml
-# config/services/normalizers.yml
-services:
-    app.serializer.normalizer.custom:
-        class: App\Normalizer\CustomNormalizer
-        tags: [ name: app.serializer.normalizers ]
+```xml
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="app.serializer.normalizer.custom" class="App\Normalizer\CustomNormalizer">
+            <tag>app.serializer.normalizers</tag>
+        </service>
+    </services>
+</container>
 ```
 
 Tag ```app.serializer.normalizers``` is required.
