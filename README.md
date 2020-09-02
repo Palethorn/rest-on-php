@@ -91,9 +91,6 @@ Example parameters.yml is included with the project. Productions one should look
 parameters:
     environment: prod # usually dev, test, staging, production
     project_name: Application # Title for your project
-    project_dir: /srv/app # Where your project is located
-    log_dir: /var/log/app # Where the application logs go
-    cache_dir: /var/cache/app # Where the application writes cache
     database_host: 127.0.0.1 # Host of your database, if you run mysql in separate containers or on separate servers change this to reflect that
     database_port: 3306 # Standard mysql port, change this if you use non-standard mysql ports or proxies
     database_name: app_database # Mysql database where your tables live
@@ -160,20 +157,40 @@ Directory for holding database migrations. You can change this in ```config/migr
 Directory for application PHP code. Put services, handlers, commands, and other PHP classes here.
 
 ### src/Kernel.php
-
-Implement framework abstract kernel
+Extending default framework kernel is not necessary, but enables overriding default paths to project_dir, cache_dir, config_dir, public_dir, and log_dir parameters.
 
 ```php
+// src/Kernel.php
 namespace App;
 use RestOnPhp\Kernel as RestOnPhpKernel;
 
 class Kernel extends RestOnPhpKernel {
+
+    public function getPublicDir() {
+        return $this->getProjectDir() . '/web';
+    }
+
+    public function getCacheDir() {
+        return $this->getProjectDir() . '/cache';
+    }
+
+    public function getLogDir() {
+        return $this->getProjectDir() . '/log';
+    }
+
+    public function getConfigDir() {
+        return $this->getProjectDir() . '/config';
+    }
+
     public function getProjectDir() {
         return __DIR__ . '/..';
     }
 }
-
 ```
+
+All these paths can be used as parameters in dependency container.
+
+Edit web/index.php to use derived class.
 
 ### cache
 Framework writes compiled parts as cache files into this directory. Default path is <project_root>/cache. It can be changed by overriding Kernel::getCacheDir in src/Kernel.php.

@@ -7,8 +7,12 @@
         https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
     <services>
+        <service id="api.command.application" class="RestOnPhp\Command\Application" public="true">
+            <call method="registerCommands"><argument type="tagged_iterator" tag="command"></argument></call>
+        </service>
+
         <service id="api.command.create_resource" class="RestOnPhp\Command\CreateResourceCommand">
-            <call method="setConfigDir"><argument>%project_dir%/config</argument></call>
+            <call method="setConfigDir"><argument>%config_dir%</argument></call>
             <call method="setEntityManager"><argument type="service" id="doctrine.orm.entity_manager" /></call>
             <tag>command</tag>
         </service>

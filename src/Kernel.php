@@ -21,7 +21,7 @@ use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Exception\ValidatorException;
 
-abstract class Kernel implements HttpKernelInterface {
+class Kernel implements HttpKernelInterface {
     /**
      * @var array $routes
      */
@@ -52,7 +52,20 @@ abstract class Kernel implements HttpKernelInterface {
      */
     private $logger;
 
-    public function __construct() {
+    /**
+     * @var string
+     */
+    private $env;
+
+    /**
+     * @var boolean
+     */
+    private $debug;
+
+    public function __construct($env, $debug) {
+        $this->env = $env;
+        $this->debug = $debug;
+
         $this->checkDirs();
         $this->loadRoutes();
         $this->loadDependencyContainer();
@@ -73,23 +86,27 @@ abstract class Kernel implements HttpKernelInterface {
     }
 
     private function loadDependencyContainer() {
+        $project_dir = $this->getProjectDir();
         $cache_dir = $this->getCacheDir();
         $log_dir = $this->getLogDir();
         $config_dir = $this->getConfigDir();
+        $public_dir = $this->getPublicDir();
 
-        if(file_exists($cache_dir . '/CompiledDependencyContainer.php')) {
+        if($this->env != 'cli' && file_exists($cache_dir . '/CompiledDependencyContainer.php')) {
             require_once $cache_dir . '/CompiledDependencyContainer.php';
             $this->dependencyContainer = new \CompiledDependencyContainer();
             return;
         }
 
         $this->dependencyContainer = new ContainerBuilder();
-        $this->dependencyContainer->addCompilerPass(new LoggerPass());
-        $loader = new XmlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
-        $loader->load('services.xml');
+        $this->dependencyContainer->setParameter('project_dir', $project_dir);
+        $this->dependencyContainer->setParameter('public_dir', $public_dir);
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
         $this->dependencyContainer->setParameter('cache_dir', $cache_dir);
         $this->dependencyContainer->setParameter('log_dir', $log_dir);
+        $this->dependencyContainer->addCompilerPass(new LoggerPass());
+        $loader = new XmlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
+        $loader->load('services.xml');
         $this->dependencyContainer->compile();
         $dumper = new PhpDumper($this->dependencyContainer);
 
@@ -287,5 +304,11 @@ abstract class Kernel implements HttpKernelInterface {
         return $this->getProjectDir() . '/config';
     }
 
-    abstract function getProjectDir();
+    public function getPublicDir() {
+        return $this->getProjectDir() . '/web';
+    }
+
+    public function getProjectDir() {
+        return __DIR__ . '/../../../..';
+    }
 }

@@ -20,7 +20,7 @@
             <argument>%database_name%</argument>
             <argument>%database_user%</argument>
             <argument>%database_password%</argument>
-            <argument>%project_dir%/config</argument>
+            <argument>%config_dir%</argument>
             <argument>%cache_dir%</argument>
             <argument>%entity_namespace%</argument>
         </service>
@@ -35,7 +35,7 @@
         <service id="api.validator_builder" class="Symfony\Component\Validator\ValidatorBuilder">
             <factory class="Symfony\Component\Validator\Validation" method="createValidatorBuilder"></factory>
             <call method="addXmlMapping">
-                <argument>%project_dir%/config/validation.xml</argument>
+                <argument>%config_dir%/validation.xml</argument>
             </call>
         </service>
 
