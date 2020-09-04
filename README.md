@@ -15,6 +15,8 @@ composer require palethorn/rest-on-php
 
 # Configuration
 
+RestOnPhp uses XML for configuration files. It enables autocomplete and easy validation.
+
 ### bin/console
 Enable executing symfony commands.
 
@@ -67,16 +69,20 @@ return ConsoleRunner::createHelperSet($entityManager);
 ### config/migrations.yml
 Include this file for migrations support. Modify to suit the application needs. Detailed documentation here https://www.doctrine-project.org/projects/doctrine-migrations/en/2.2/reference/configuration.html
 
-```yaml
-name: "Migrations"
-migrations_namespace: "Migrations\\Namespace"
-table_name: "doctrine_migration_versions"
-column_name: "version"
-column_length: 14
-executed_at_column_name: "executed_at"
-migrations_directory: "doctrine_migrations"
-all_or_nothing: true
-check_database_platform: true
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-migrations xmlns="http://doctrine-project.org/schemas/migrations/configuration"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://doctrine-project.org/schemas/migrations/configuration
+          ../vendor/doctrine/migrations/lib/Doctrine/Migrations/Configuration/XML/configuration.xsd">
+
+    <name>Migrations</name>
+    <migrations-namespace>Migrations</migrations-namespace>
+    <table name="doctrine_migration_versions" column="version" column_length="14" executed_at_column="executed_at"></table>
+    <migrations-directory>doctrine_migrations</migrations-directory>
+    <all-or-nothing>true</all-or-nothing>
+    <check-database-platform>true</check-database-platform>
+</doctrine-migrations>
 ```
 
 ### config/parameters.xml
