@@ -11,6 +11,7 @@
     </imports>
 
     <services>
+        <service id="api.event.dispatcher" class="Symfony\Component\EventDispatcher\EventDispatcher" public="true" />
         <service id="doctrine.factory.entity_manager" class="RestOnPhp\Factory\DoctrineEntityManagerFactory" />
 
         <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager">

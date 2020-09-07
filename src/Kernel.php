@@ -2,7 +2,12 @@
 namespace RestOnPhp;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use RestOnPhp\DependencyInjection\Compiler\EventPass;
 use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
+use RestOnPhp\Event\PostNormalizeEvent;
+use RestOnPhp\Event\PostSerializeEvent;
+use RestOnPhp\Event\PreNormalizeEvent;
+use RestOnPhp\Event\PreSerializeEvent;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
@@ -62,6 +67,11 @@ class Kernel implements HttpKernelInterface {
      */
     private $debug;
 
+    /**
+     * @var EventDispatcher
+     */
+    private $eventDispatcher;
+
     public function __construct($env, $debug) {
         $this->env = $env;
         $this->debug = $debug;
@@ -70,6 +80,7 @@ class Kernel implements HttpKernelInterface {
         $this->loadRoutes();
         $this->loadDependencyContainer();
 
+        $this->eventDispatcher = $this->dependencyContainer->get('api.event.dispatcher');
         $this->logger = $this->dependencyContainer->get('api.logger');
         $this->metadata = $this->dependencyContainer->get('api.metadata.xml');
         $this->serializer = $this->dependencyContainer->get('api.serializer');
@@ -104,6 +115,7 @@ class Kernel implements HttpKernelInterface {
         $this->dependencyContainer->setParameter('config_dir', $config_dir);
         $this->dependencyContainer->setParameter('cache_dir', $cache_dir);
         $this->dependencyContainer->setParameter('log_dir', $log_dir);
+        $this->dependencyContainer->addCompilerPass(new EventPass());
         $this->dependencyContainer->addCompilerPass(new LoggerPass());
         $loader = new XmlFileLoader($this->dependencyContainer, new FileLocator($config_dir));
         $loader->load('services.xml');
@@ -260,8 +272,14 @@ class Kernel implements HttpKernelInterface {
                 return $data;
             }
 
+            $this->eventDispatcher->dispatch(new PreNormalizeEvent($entityClass, $data), PreNormalizeEvent::NAME);
             $normalized = $this->normalize($entityClass, $data);
+            $this->eventDispatcher->dispatch(new PostNormalizeEvent($entityClass, $data, $normalized), PostNormalizeEvent::NAME);
+
+            $this->eventDispatcher->dispatch(new PreSerializeEvent($entityClass, $data, $normalized), PreSerializeEvent::NAME);
             $serialized = $this->serialize($normalized);
+            $this->eventDispatcher->dispatch(new PostSerializeEvent($entityClass, $data, $normalized, $serialized), PostSerializeEvent::NAME);
+
             $response = new Response($serialized, 200, [ 'Content-Type' => 'application/json' ]);
         } catch(ValidatorException $e) {
             $response = new Response($this->serializer->serialize(array('message' => $e->getMessage()), 'json'), 400);

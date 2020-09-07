@@ -3,6 +3,9 @@ namespace RestOnPhp\Handler;
 
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
+use RestOnPhp\Event\PostDeserializeEvent;
+use RestOnPhp\Event\PreDeserializeEvent;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
@@ -12,6 +15,7 @@ use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ItemHandler {
+    private $dispatcher;
     private $request;
     private $autofilters;
     private $autofillers;
@@ -22,6 +26,7 @@ class ItemHandler {
     private $entityManager;
 
     public function __construct(
+        EventDispatcher $dispatcher,
         Serializer $serializer, 
         EntityManager $entityManager, 
         ValidatorInterface $validator, 
@@ -30,11 +35,11 @@ class ItemHandler {
         $autofillers = [], 
         RequestStack $requestStack
     ) {
-
         $this->autofilters = [];
         $this->autofillers = [];
         $this->metadata = $metadata;
         $this->validator = $validator;
+        $this->dispatcher = $dispatcher;
         $this->serializer = $serializer;
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
@@ -99,7 +104,10 @@ class ItemHandler {
     }
 
     public function post($entityClass, $id, $autofilters, $autofillers) {
+        $this->dispatcher->dispatch(new PreDeserializeEvent($entityClass, $this->request->getContent()), PreDeserializeEvent::NAME);
         $data = $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json');
+        $this->dispatcher->dispatch(new PostDeserializeEvent($entityClass, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
+
         $errors = $this->validator->validate($data);
 
         if(count($errors) > 0) {
@@ -141,7 +149,10 @@ class ItemHandler {
             throw new ResourceNotFoundException("Item not found");
         }
 
+        $this->dispatcher->dispatch(new PreDeserializeEvent($entityClass, $this->request->getContent()), PreDeserializeEvent::NAME);
         $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
+        $this->dispatcher->dispatch(new PostDeserializeEvent($entityClass, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
+
         $errors = $this->validator->validate($data);
 
         if(count($errors) > 0) {

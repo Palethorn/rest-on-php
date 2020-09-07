@@ -14,6 +14,7 @@
             <argument type="service" id="api.request.stack"></argument>
         </service>
         <service id="api.handler.item" class="RestOnPhp\Handler\ItemHandler" public="true">
+            <argument type="service" id="api.event.dispatcher"></argument>
             <argument type="service" id="api.serializer"></argument>
             <argument type="service" id="doctrine.orm.entity_manager"></argument>
             <argument type="service" id="api.validator"></argument>

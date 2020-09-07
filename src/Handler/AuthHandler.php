@@ -6,6 +6,7 @@ use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -17,8 +18,8 @@ class AuthHandler {
     private $entity;
     private $request;
     private $jwtSecret;
-    private $entityManager;
     private $serializer;
+    private $entityManager;
 
     public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity, RequestStack $requestStack) {
         $this->entity = $entity;
