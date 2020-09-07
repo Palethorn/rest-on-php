@@ -98,33 +98,35 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services
     http://symfony.com/schema/dic/symfony
     https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
     <parameters>
-    <!-- # usually dev, test, staging, production -->
-    <parameter key="environment">prod</parameter>
-    <!-- # Title for the project -->
-    <parameter key="project_name">Application</parameter>
-    <!-- # Host of application database. If mysql runs in separate containers or on separate servers change this to reflect that -->
-    <parameter key="database_host">127.0.0.1</parameter>
-    <!-- # Standard mysql port, change this if database uses non-standard ports or proxies -->
-    <parameter key="database_port">3306</parameter>
-    <!-- # Mysql database where database tables live -->
-    <parameter key="database_name">app_database</parameter>
-    <!-- # Non-permissive user -->
-    <parameter key="database_user">app_user</parameter>
-    <parameter key="database_password">app_password
-    <!-- # Domain under which the application lives -->
-    <parameter key="dns_name">app.example.com</parameter>
-    <!-- # Does it use https? Used for generating URLs and redirects -->
-    <parameter key="ssl">true</parameter>
-    <!-- # Key with which JWT API tokens are signed -->
-    <parameter key="jwt_secret">UvKLsxg2Be5v4Fun</parameter>
-    <!-- # Namespace for doctirne entities. Specify namespace here for preexisting entities -->
-    <parameter key="entity_namespace">App\Entity</parameter>
-    <!-- # Entity which will be used for authentication and authorization of users accessing the API -->
-    <parameter key="user_entity">App\Entity\User</parameter>
-    <!-- # Supports cookie, header, and query_parameter. -->
-    <parameter key="token_bearer">cookie</parameter>
-    <!-- # Key which holds token value. Ex. token=eyJhbGciOiJIUzI1NiIsInR5... -->
-    <parameter key="token_key">token</parameter>
+        <!-- # usually dev, test, staging, production -->
+        <parameter key="environment">prod</parameter>
+        <!-- # Title for the project -->
+        <parameter key="project_name">Application</parameter>
+        <!-- # Host of application database. If mysql runs in separate containers or on separate servers change this to reflect that -->
+        <parameter key="database_host">127.0.0.1</parameter>
+        <!-- # Standard mysql port, change this if database uses non-standard ports or proxies -->
+        <parameter key="database_port">3306</parameter>
+        <!-- # Mysql database where database tables live -->
+        <parameter key="database_name">app_database</parameter>
+        <!-- # Non-permissive user -->
+        <parameter key="database_user">app_user</parameter>
+        <parameter key="database_password">app_password
+        <!-- # Domain under which the application lives -->
+        <parameter key="dns_name">app.example.com</parameter>
+        <!-- # Does it use https? Used for generating URLs and redirects -->
+        <parameter key="ssl">true</parameter>
+        <!-- # Key with which JWT API tokens are signed -->
+        <parameter key="jwt_secret">UvKLsxg2Be5v4Fun</parameter>
+        <!-- # Namespace for doctirne entities. Specify namespace here for preexisting entities -->
+        <parameter key="entity_namespace">App\Entity</parameter>
+        <!-- # Entity which will be used for authentication and authorization of users accessing the API -->
+        <parameter key="user_entity">App\Entity\User</parameter>
+        <!-- # Supports cookie, header, and query_parameter. -->
+        <parameter key="token_bearer">cookie</parameter>
+        <!-- # Key which holds token value. Ex. token=eyJhbGciOiJIUzI1NiIsInR5... -->
+        <parameter key="token_key">token</parameter>
+    </parameters>
+</container>
 ```
 
 ### config/resources.xml
