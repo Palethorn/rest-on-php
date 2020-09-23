@@ -74,7 +74,6 @@ class XmlMetadata {
                     'name' => $field_name,
                     'type' => $field_type,
                     'filter-type' => $field_filter_type,
-                    'id' => $field_id,
                     'normalizer' => $field_normalizer
                 );
             }
@@ -134,6 +133,7 @@ class XmlMetadata {
             $docs[] = array(
                 'name' => $resource['name'],
                 'entity' => $resource['entity'],
+                'id' => $resource['id'],
                 'fields' => $fields,
                 'routes' => $routes
             );
