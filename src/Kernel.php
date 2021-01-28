@@ -23,6 +23,7 @@ use Symfony\Component\Routing\Loader\XmlFileLoader as RoutingXmlFileLoader;
 use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
 use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
 use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\Serializer\Exception\NotEncodableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Exception\ValidatorException;
 
@@ -295,6 +296,8 @@ class Kernel implements HttpKernelInterface {
             $response = new Response(json_encode('Not allowed!'), Response::HTTP_METHOD_NOT_ALLOWED, ['Content-Type' => 'application/json']);
         } catch(HttpException $e) {
             $response = new Response(json_encode($e->getMessage()), $e->getStatusCode(), ['Content-Type' => 'application/json']);
+        } catch(NotEncodableValueException $e) {
+            $response = new Response(json_encode($e->getMessage()), 400, ['Content-Type' => 'application/json']);
         }
 
         $this->logger->info('RESPONSE', [
