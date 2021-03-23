@@ -34,14 +34,14 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
      */
     public function normalize($object, string $format = null, array $context = []) {
         $normalized = array();
-        $metadata = $this->metadata->getMetadataFor(get_class($object));
+        $metadata = $context['resource_metadata'];
 
         foreach($metadata['fields'] as $field) {
             $getter = 'get' . ucfirst(Utils::camelize($field['name']));
             $value = $object->$getter();
 
             if(isset($field['normalizer']) && $field['normalizer'] != '') {
-                $normalized[$field['name']] = $this->normalizers[$field['normalizer']]->normalize($object, $value);
+                $normalized[$field['name']] = $this->normalizers[$field['normalizer']]->normalize($object, $value, $context);
             } else {
                 $normalized[$field['name']] = $value;
             }
@@ -75,7 +75,7 @@ final class EntityNormalizer implements NormalizerInterface, DenormalizerInterfa
         }
 
         foreach($data as $key => $value) {
-            $field = $this->metadata->getFieldMetadataFor($type, $key);
+            $field = $this->metadata->getFieldMetadataForEntity($type, $key);
             $setter = 'set' . ucfirst($key);
 
             if(isset($field['normalizer']) && $field['normalizer'] != '') {

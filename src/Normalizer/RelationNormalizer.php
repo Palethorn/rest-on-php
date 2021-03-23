@@ -13,24 +13,24 @@ class RelationNormalizer {
         $this->entityManager = $entityManager;
     }
 
-    public function normalize($object, $value) {
+    public function normalize($object, $value, $context) {
         if($value == null) {
             return null;
         }
-        
+
         $entityClass = str_replace('Proxy\\__CG__\\', '', get_class($value));
-        $id_field = $this->metadata->getIdFieldNameFor($entityClass);
+        $id_field = $this->metadata->getIdFieldNameForEntity($entityClass);
         $getter = 'get' . ucfirst($id_field);
         return $value->$getter();
     }
 
-    public function denormalize($data, string $type) {
+    public function denormalize($data, string $type, $format = [], $context = []) {
         if(!$data) {
             return null;
         }
 
         $repository = $this->entityManager->getRepository($type);
-        $id_field = $this->metadata->getIdFieldNameFor($type);
+        $id_field = $this->metadata->getIdFieldNameForEntity($type);
         $object = $repository->findOneBy(array(
             $id_field => $data
         ));

@@ -80,7 +80,7 @@ class AuthHandler {
         }
 
         $token = (new Parser())->parse($token);
-        
+
         if(!$token->verify($this->signer, $this->jwtSecret)) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }

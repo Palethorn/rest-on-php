@@ -148,28 +148,35 @@ class Kernel implements HttpKernelInterface {
         }
     }
 
-    private function normalize($entityClass, $data) {
+    private function normalize($resource_name, $data) {
         $this->logger->info('NORMALIZE', [
-            'entity_class' => $entityClass
+            'resource_name' => $resource_name
         ]);
 
-        $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
+        $resource_metadata = $this->metadata->getMetadataFor($resource_name);
+        $fields = $this->metadata->getNormalizerFieldsFor($resource_name);
         
         if($data[0] == 'collection') {
             $normalized = array('items' => $this->serializer->normalize(
                 $data[1], 
                 null,
-                [AbstractNormalizer::ATTRIBUTES => $fields]
+                [
+                    AbstractNormalizer::ATTRIBUTES => $fields,
+                    'resource_metadata' => $resource_metadata
+                ]
             ));
 
             $normalized['pagination'] = $data[2];
 
         } else if($data[0] == 'item') {
-            $fields = $this->metadata->getNormalizerFieldsFor($entityClass);
+            $fields = $this->metadata->getNormalizerFieldsFor($resource_name);
             $normalized = $this->serializer->normalize(
                 $data[1], 
                 null,
-                [AbstractNormalizer::ATTRIBUTES => $fields]
+                [
+                    AbstractNormalizer::ATTRIBUTES => $fields,
+                    'resource_metadata' => $resource_metadata
+                ]
             );
         } else {
             $normalized = $data;
@@ -190,31 +197,14 @@ class Kernel implements HttpKernelInterface {
         $attributes = $matcher->match($this->request->getPathInfo());
         $parameters = [];
 
-        if(!isset($attributes['_controller'])) {
-            $this->logger->error('HANDLER_LOAD_FAIL', [
-                'message' => 'Missing controller property on route',
-                'attributes' => $attributes
-            ]);
+        $entityClass = null;
+        $handler_id = $attributes['_controller'];
+        $resource_metadata = $this->metadata->getMetadataFor($attributes['resource']);
+        $entityClass = $resource_metadata['entity'];
 
-            throw new NoConfigurationException(sprintf('Missing controller property on route'));
+        if($resource_metadata['handler']) {
+            $handler_id = $resource_metadata['handler'];
         }
-
-        if(!isset($attributes['resource'])) {
-            $handler = $this->dependencyContainer->get($attributes['_controller']);
-            $reflectionClass = new \ReflectionClass($handler);
-            $reflectionMethod = $reflectionClass->getMethod('handle');
-
-            foreach($reflectionMethod->getParameters() as $parameter) {
-                if(isset($attributes[$parameter->name])) {
-                    $parameters[] = $attributes[$parameter->name];
-                }
-            }
-
-            return [ $handler, $reflectionMethod, $parameters];
-        }
-
-        $single_form = substr(ucfirst($attributes['resource']), 0, -1);
-        $entityClass = sprintf('%s\\%s', $this->dependencyContainer->getParameter('entity_namespace'), Utils::camelize($single_form));
 
         if(!class_exists($entityClass)) {
             $this->logger->error('HANDLER_LOAD_FAIL', [
@@ -225,10 +215,10 @@ class Kernel implements HttpKernelInterface {
             throw new ResourceNotFoundException(sprintf('%s resource class does not exist!', $entityClass));
         }
 
-        $handler = $this->dependencyContainer->get($attributes['_controller']);
+        $handler = $this->dependencyContainer->get($handler_id);
         $reflectionClass = new \ReflectionClass($handler);
         $reflectionMethod = $reflectionClass->getMethod('handle');
-        $parameters[] = $entityClass;
+        $parameters[] = $attributes['resource'];
 
         foreach($reflectionMethod->getParameters() as $parameter) {
             if(isset($attributes[$parameter->name])) {
@@ -236,16 +226,19 @@ class Kernel implements HttpKernelInterface {
             }
         }
 
+        $parameters[] = $entityClass;
+        $parameters[] = $resource_metadata;
+
         return [ $handler, $reflectionMethod, $parameters];
     }
 
-    private function security($entityClass) { 
+    private function security($resource_name) {
         $this->logger->info('SECURITY_CHECK');
         /**
          * @var Security\Authorization
          */
         $authorization = $this->dependencyContainer->get('api.security.authorization');
-        $authorization->authorize($entityClass);
+        $authorization->authorize($resource_name);
     }
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
@@ -266,21 +259,21 @@ class Kernel implements HttpKernelInterface {
 
         try {
             list($handler, $reflectionMethod, $args) = $this->getHandler();
-            $entityClass = isset($args[0]) ? $args[0] : null;
-            $this->security($entityClass);
+            $resource_name = isset($args[0]) ? $args[0] : null;
+            $this->security($resource_name);
             $data = $reflectionMethod->invokeArgs($handler, $args);
 
             if($data instanceof Response) {
                 return $data;
             }
 
-            $this->eventDispatcher->dispatch(new PreNormalizeEvent($entityClass, $data), PreNormalizeEvent::NAME);
-            $normalized = $this->normalize($entityClass, $data);
-            $this->eventDispatcher->dispatch(new PostNormalizeEvent($entityClass, $data, $normalized), PostNormalizeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PreNormalizeEvent($resource_name, $data), PreNormalizeEvent::NAME);
+            $normalized = $this->normalize($resource_name, $data);
+            $this->eventDispatcher->dispatch(new PostNormalizeEvent($resource_name, $data, $normalized), PostNormalizeEvent::NAME);
 
-            $this->eventDispatcher->dispatch(new PreSerializeEvent($entityClass, $data, $normalized), PreSerializeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PreSerializeEvent($resource_name, $data, $normalized), PreSerializeEvent::NAME);
             $serialized = $this->serialize($normalized);
-            $this->eventDispatcher->dispatch(new PostSerializeEvent($entityClass, $data, $normalized, $serialized), PostSerializeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PostSerializeEvent($resource_name, $data, $normalized, $serialized), PostSerializeEvent::NAME);
 
             $response = new Response($serialized, 200, [ 'Content-Type' => 'application/json' ]);
         } catch(ValidatorException $e) {

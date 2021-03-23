@@ -3,7 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://symfony.com/schema/routing
         https://symfony.com/schema/routing/routing-1.0.xsd">
-    <route id="auth" path="/login" methods="POST" controller="api.handler.auth" />
+    <!--<route id="auth" path="/login" methods="POST" controller="api.handler.auth" />-->
     <route id="docs" path="/docs.json" methods="GET" controller="api.handler.docs" />
     <route id="collection" path="/{resource}" methods="GET" controller="api.handler.collection" />
     <route id="item" path="/{resource}/{id}" methods="GET|PUT|PATCH|DELETE" controller="api.handler.item" />

@@ -1,6 +1,7 @@
 <?php
 namespace RestOnPhp\Metadata;
 
+use Exception;
 use Symfony\Component\Config\Util\Exception\InvalidXmlException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
@@ -43,7 +44,7 @@ class XmlMetadata {
             $roles = $resource->getAttribute('roles');
             $roles = $roles ? explode('|', $roles) : array();
             $secure = $secure == 'true' ? true : false;
-
+            $handler = $resource->getAttribute('handler');
             $routes = [];
             $fields = [];
             $autofilters = [];
@@ -86,12 +87,13 @@ class XmlMetadata {
                 $autofillers[] = $field_element->getAttribute('class');
             }
 
-            $parsed[$entity] = array(
+            $parsed[$name] = array(
                 'name' => $name,
                 'entity' => $entity,
                 'id' => $id,
                 'secure' => $secure,
                 'roles' => $roles,
+                'handler' => $handler,
                 'routes' => $routes,
                 'fields' => $fields,
                 'autofilters' => $autofilters,
@@ -102,11 +104,11 @@ class XmlMetadata {
         return $parsed;
     }
 
-    public function getNormalizerFieldsFor(string $entityClass) {
+    public function getNormalizerFieldsFor(string $name) {
         $resource = null;
         $fields = array();
 
-        $resource = $this->getMetadataFor($entityClass);
+        $resource = $this->getMetadataFor($name);
 
         foreach($resource['fields'] as $field) {
             $fields[] = $field['name'];
@@ -142,38 +144,56 @@ class XmlMetadata {
         return $docs;
     }
 
-    public function getMetadataFor($entityClass) {
-        $entityClass = str_replace('Proxy\\__CG__\\', '', $entityClass);
-
-        if(!isset($this->metadata[$entityClass])) {
-            throw new ResourceNotFoundException(sprintf('Resource of type %s doesn\'t exist.', $entityClass));
+    public function getMetadataFor($name) {
+        if(!isset($this->metadata[$name])) { throw new Exception();
+            throw new ResourceNotFoundException(sprintf('Resource %s doesn\'t exist.', $name));
         }
 
-        return $this->metadata[$entityClass];
+        return $this->metadata[$name];
     }
 
-    public function getFieldMetadataFor($entityClass, $field_name) {
-        $resource = $this->getMetadataFor($entityClass);
+    public function getMetadataForEntity($entityClass) {
+        foreach($this->metadata as $resource_metadata) {
+            if($entityClass == $resource_metadata['entity']) {
+                return $resource_metadata;
+            }
+        }
+        
+        throw new ResourceNotFoundException(sprintf('Resource entity class %s doesn\'t exist.', $entityClass));
+    }
+
+    public function getFieldMetadataFor($name, $field_name) {
+        $resource = $this->getMetadataFor($name);
         return $resource['fields'][$field_name];
     }
 
-    public function getRouteMetadataFor($entityClass, $route_name) {
-        $resource = $this->getMetadataFor($entityClass);
+    public function getFieldMetadataForEntity($entity_class, $field_name) {
+        $resource = $this->getMetadataForEntity($entity_class);
+        return $resource['fields'][$field_name];
+    }
+
+    public function getRouteMetadataFor($name, $route_name) {
+        $resource = $this->getMetadataFor($name);
         return $resource['routes'][$route_name];
     }
 
-    public function getIdFieldNameFor($entityClass) {
-        $resource = $this->getMetadataFor($entityClass);
+    public function getIdFieldNameFor($name) {
+        $resource = $this->getMetadataFor($name);
         return $resource['id'];
     }
 
-    public function getAutofilterMetadataFor($entityClass) {
-        $resource = $this->getMetadataFor($entityClass);
+    public function getIdFieldNameForEntity($entityClass) {
+        $resource = $this->getMetadataForEntity($entityClass);
+        return $resource['id'];
+    }
+
+    public function getAutofilterMetadataFor($name) {
+        $resource = $this->getMetadataFor($name);
         return $resource['autofilters'];
     }
 
-    public function getAutofillerMetadataFor($entityClass) {
-        $resource = $this->getMetadataFor($entityClass);
+    public function getAutofillerMetadataFor($name) {
+        $resource = $this->getMetadataFor($name);
         return $resource['autofillers'];
     }
 }

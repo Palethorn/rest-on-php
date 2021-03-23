@@ -30,9 +30,9 @@ class Authorization {
         $this->logger = $logger;
     }
 
-    public function authorize($entityClass) {
+    public function authorize($resource_name) {
         try {
-            $resourceMetadata = $this->metadata->getMetadataFor($entityClass);
+            $resourceMetadata = $this->metadata->getMetadataFor($resource_name);
         } catch(ResourceNotFoundException $e) {
             $resourceMetadata = [ 'secure' => false, 'roles' => array() ];
         }

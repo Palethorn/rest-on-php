@@ -1,8 +1,10 @@
 <?php
 namespace RestOnPhp\Handler;
 
+use Doctrine\ORM\Cache\Region\DefaultRegion;
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
+use RestOnPhp\Repository\DefaultRepository;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class CollectionHandler {
@@ -23,9 +25,10 @@ class CollectionHandler {
         $this->request = $requestStack->getCurrentRequest();
     }
 
-    public function handle($entityClass) {
-        $id_field = $this->metadata->getIdFieldNameFor($entityClass);
-        $filterMetadata = $this->metadata->getAutofilterMetadataFor($entityClass);
+    public function handle($resource_name) {
+        $metadata = $this->metadata->getMetadataFor($resource_name);
+        $id_field = $this->metadata->getIdFieldNameFor($resource_name);
+        $filterMetadata = $this->metadata->getAutofilterMetadataFor($resource_name);
         $default_autofilters = [];
 
         foreach ($filterMetadata as $filterClass) {
@@ -50,7 +53,7 @@ class CollectionHandler {
                 continue;
             }
 
-            $field_metadata = $this->metadata->getFieldMetadataFor($entityClass, $field);
+            $field_metadata = $this->metadata->getFieldMetadataFor($resource_name, $field);
             $filter_type = isset($field_metadata['filter-type']) ? $field_metadata['filter-type'] : 'exact';
             $filters[$filter_type][$field] = $filter;
         }
@@ -72,29 +75,29 @@ class CollectionHandler {
             $id_field => 'ASC'
         );
 
-        $entityMetadata = $this->entityManager->getClassMetadata($entityClass);
+        $entityMetadata = $this->entityManager->getClassMetadata($metadata['entity']);
 
         if(!$entityMetadata->customRepositoryClassName) {
-            $entityMetadata->setCustomRepositoryClass('RestOnPhp\Repository\DefaultRepository');
+            $entityMetadata->setCustomRepositoryClass(DefaultRepository::class);
         }
 
         /**
          * @var \Doctrine\ORM\EntityRepository $entityRepository
          */
-        $entityRepository = $this->entityManager->getRepository($entityClass);
+        $entityRepository = $this->entityManager->getRepository($metadata['entity']);
         $paginator = $entityRepository->get($filters, $pagination_parameters, $order);
-        $pagination = $this->pagination($entityClass, $paginator, $pagination_parameters);
+        $pagination = $this->pagination($resource_name, $paginator, $pagination_parameters);
         return [ 'collection', $paginator, $pagination ];
     }
 
-    private function pagination($entityClass, $paginator, $pagination_parameters) {
+    private function pagination($resource_name, $paginator, $pagination_parameters) {
 
         if($pagination_parameters == false) {
             return [];
         }
 
         $total_items = count($paginator);
-        $route = $this->metadata->getRouteMetadataFor($entityClass, 'getCollection');
+        $route = $this->metadata->getRouteMetadataFor($resource_name, 'getCollection');
         $params = $this->request->query->all();
         $params['pagination']['page'] = $pagination_parameters['page'];
         $params['pagination']['per_page'] = $pagination_parameters['per_page'];

@@ -53,7 +53,9 @@ class ItemHandler {
         }
     }
 
-    public function handle($entityClass, $id = null) {
+    public function handle($resource_name, $id = null) {
+        $resource_metadata = $this->metadata->getMetadataFor($resource_name);
+        $entityClass = $resource_metadata['entity'];
         $entityMetadata = $this->entityManager->getClassMetadata($entityClass);
 
         if(!$entityMetadata->customRepositoryClassName) {
@@ -64,25 +66,25 @@ class ItemHandler {
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
 
-        $filterMetadata = $this->metadata->getAutofilterMetadataFor($entityClass);
+        $filterMetadata = $this->metadata->getAutofilterMetadataFor($resource_name);
         $default_autofilters = [];
 
         foreach ($filterMetadata as $filterClass) {
             $default_autofilters[] = $this->autofilters[$filterClass];
         }
 
-        $autofillerMetadata = $this->metadata->getAutofillerMetadataFor($entityClass);
+        $autofillerMetadata = $this->metadata->getAutofillerMetadataFor($resource_name);
         $default_autofillers = [];
 
         foreach ($autofillerMetadata as $autofillerClass) {
             $default_autofillers[] = $this->autofillers[$autofillerClass];
         }
 
-        return [ 'item', $this->$method($entityClass, $id, $default_autofilters, $default_autofillers) ];
+        return [ 'item', $this->$method($resource_name, $id, $default_autofilters, $default_autofillers) ];
     }
 
-    public function get($entityClass, $id, $default_autofilters) {
-        $id_field = $this->metadata->getIdFieldNameFor($entityClass);
+    public function get($resource_name, $id, $default_autofilters) {
+        $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $data = $this->repository->get([ 
             'partial' => [], 
             'exact' => [ $id_field => $id ], 
@@ -103,10 +105,10 @@ class ItemHandler {
         return $data;
     }
 
-    public function post($entityClass, $id, $autofilters, $autofillers) {
-        $this->dispatcher->dispatch(new PreDeserializeEvent($entityClass, $this->request->getContent()), PreDeserializeEvent::NAME);
-        $data = $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json');
-        $this->dispatcher->dispatch(new PostDeserializeEvent($entityClass, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
+    public function post($resource_name, $id, $autofilters, $autofillers) {
+        $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
+        $data = $this->serializer->deserialize($this->request->getContent(), $resource_name, 'json');
+        $this->dispatcher->dispatch(new PostDeserializeEvent($resource_name, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
 
         $errors = $this->validator->validate($data);
 
@@ -130,8 +132,9 @@ class ItemHandler {
         return $data;
     }
 
-    public function put($entityClass, $id, $default_autofilters, $autofillers = []) {
-        $id_field = $this->metadata->getIdFieldNameFor($entityClass);
+    public function put($resource_name, $id, $default_autofilters, $autofillers = []) {
+        $resource_metadata = $this->metadata->getMetadataFor($resource_name);
+        $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $data = $this->repository->get([ 
             'partial' => [], 
             'exact' => [ $id_field => $id ],
@@ -149,9 +152,9 @@ class ItemHandler {
             throw new ResourceNotFoundException("Item not found");
         }
 
-        $this->dispatcher->dispatch(new PreDeserializeEvent($entityClass, $this->request->getContent()), PreDeserializeEvent::NAME);
-        $this->serializer->deserialize($this->request->getContent(), $entityClass, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
-        $this->dispatcher->dispatch(new PostDeserializeEvent($entityClass, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
+        $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
+        $this->serializer->deserialize($this->request->getContent(), $resource_metadata['entity'], 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
+        $this->dispatcher->dispatch(new PostDeserializeEvent($resource_name, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
 
         $errors = $this->validator->validate($data);
 
@@ -175,8 +178,8 @@ class ItemHandler {
         return $data;
     }
 
-    public function delete($entityClass, $id, $default_autofilters) {
-        $id_field = $this->metadata->getIdFieldNameFor($entityClass);
+    public function delete($resource_name, $id, $default_autofilters) {
+        $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $data = $this->repository->get([ 
             'partial' => [], 
             'exact' => [ $id_field => $id ],
@@ -200,7 +203,7 @@ class ItemHandler {
         return '';
     }
 
-    public function patch($entityClass, $id, $default_autofilters, $autofillers) {
-        return $this->put($entityClass, $id, $default_autofilters, $autofillers);
+    public function patch($resource_name, $id, $default_autofilters, $autofillers) {
+        return $this->put($resource_name, $id, $default_autofilters, $autofillers);
     }
 }

@@ -23,6 +23,7 @@
         <xs:attribute name="id"></xs:attribute>
         <xs:attribute name="secure" type="xs:boolean" default="false"></xs:attribute>
         <xs:attribute name="roles"></xs:attribute>
+        <xs:attribute name="handler"></xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="autofilter">
