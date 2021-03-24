@@ -106,8 +106,9 @@ class ItemHandler {
     }
 
     public function post($resource_name, $id, $autofilters, $autofillers) {
+        $resource_metadata = $this->metadata->getMetadataFor($resource_name);
         $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
-        $data = $this->serializer->deserialize($this->request->getContent(), $resource_name, 'json');
+        $data = $this->serializer->deserialize($this->request->getContent(), $resource_metadata['entity'], 'json');
         $this->dispatcher->dispatch(new PostDeserializeEvent($resource_name, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
 
         $errors = $this->validator->validate($data);

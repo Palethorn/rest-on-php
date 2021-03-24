@@ -51,7 +51,7 @@ class DefaultRepository extends EntityRepository {
             $q->setMaxResults($pagination['per_page']);
             $q->setFirstResult(($pagination['page'] - 1) * $pagination['per_page']);
         }
-        
+
         if($single) {
             return $q->getQuery()->getOneOrNullResult();
         }

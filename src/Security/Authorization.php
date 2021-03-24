@@ -51,6 +51,10 @@ class Authorization {
                 return;
             }
 
+            if($user->hasRole('SUPERADMIN')) {
+                return;
+            }
+
             $authorized = true;
 
             if(!empty($resourceMetadata['roles'])) {
