@@ -148,7 +148,7 @@ class XmlMetadata {
     }
 
     public function getMetadataFor($name) {
-        if(!isset($this->metadata[$name])) { throw new Exception();
+        if(!isset($this->metadata[$name])) {
             throw new ResourceNotFoundException(sprintf('Resource %s doesn\'t exist.', $name));
         }
 
