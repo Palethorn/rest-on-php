@@ -8,12 +8,12 @@ use RestOnPhp\Event\PostNormalizeEvent;
 use RestOnPhp\Event\PostSerializeEvent;
 use RestOnPhp\Event\PreNormalizeEvent;
 use RestOnPhp\Event\PreSerializeEvent;
+use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -25,7 +25,6 @@ use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
 use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Serializer\Exception\NotEncodableValueException;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Exception\ValidatorException;
 
 class Kernel implements HttpKernelInterface {
@@ -85,7 +84,6 @@ class Kernel implements HttpKernelInterface {
         $this->eventDispatcher = $this->dependencyContainer->get('api.event.dispatcher');
         $this->logger = $this->dependencyContainer->get('api.logger');
         $this->metadata = $this->dependencyContainer->get('api.metadata.xml');
-        $this->serializer = $this->dependencyContainer->get('api.serializer');
     }
 
     public function checkDirs() {
@@ -153,31 +151,18 @@ class Kernel implements HttpKernelInterface {
             'resource_name' => $resource_name
         ]);
 
+        /**
+         * @var RootNormalizer
+         */
+        $normalizer = $this->dependencyContainer->get('api.normalizer');
+
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
-        $fields = $this->metadata->getNormalizerFieldsFor($resource_name);
-        
+
         if($data[0] == 'collection') {
-            $normalized = array('items' => $this->serializer->normalize(
-                $data[1], 
-                null,
-                [
-                    AbstractNormalizer::ATTRIBUTES => $fields,
-                    'resource_metadata' => $resource_metadata
-                ]
-            ));
-
+            $normalized = ['items' => $normalizer->normalizeCollection($data[1], $resource_metadata) ];
             $normalized['pagination'] = $data[2];
-
         } else if($data[0] == 'item') {
-            $fields = $this->metadata->getNormalizerFieldsFor($resource_name);
-            $normalized = $this->serializer->normalize(
-                $data[1], 
-                null,
-                [
-                    AbstractNormalizer::ATTRIBUTES => $fields,
-                    'resource_metadata' => $resource_metadata
-                ]
-            );
+            $normalized =$normalizer->normalizeItem($data[1], $resource_metadata);
         } else {
             $normalized = $data;
         }
@@ -187,7 +172,7 @@ class Kernel implements HttpKernelInterface {
 
     private function serialize($data) {
         $this->logger->info('SERIALIZE');
-        return $this->serializer->serialize($data, 'json');
+        return json_encode($data);
     }
 
     private function getHandler() {
@@ -277,10 +262,10 @@ class Kernel implements HttpKernelInterface {
 
             $response = new Response($serialized, 200, [ 'Content-Type' => 'application/json' ]);
         } catch(ValidatorException $e) {
-            $response = new Response($this->serializer->serialize(array('message' => $e->getMessage()), 'json'), 400);
+            $response = new Response(json_encode([ 'message' => $e->getMessage()], 'json'), 400);
         } catch(UniqueConstraintViolationException $e) {
             $response = new Response(
-                $this->serializer->serialize(array('message' => 'Item already exists'), 'json'), 409, ['Content-Type' => 'application/json']
+                json_encode(['message' => 'Item already exists']), 409, ['Content-Type' => 'application/json']
             );
         } catch(NoConfigurationException $e) { 
             $response = new Response(json_encode('Not found! ' . $e->getMessage()), Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);

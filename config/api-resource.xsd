@@ -39,6 +39,7 @@
         <xs:attribute name="type"></xs:attribute>
         <xs:attribute name="filter-type" type="api:filter-type" default="exact"></xs:attribute>
         <xs:attribute name="normalizer"></xs:attribute>
+        <xs:attribute name="denormalizer"></xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="route">

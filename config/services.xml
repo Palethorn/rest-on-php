@@ -17,7 +17,7 @@
         <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager">
             <factory service="doctrine.factory.entity_manager" method="create" />
             <argument>%database_driver%</argument>
-            <argument>%database_path%</argument>
+            <!--<argument>%database_path%</argument>-->
             <argument>%database_host%</argument>
             <argument>%database_port%</argument>
             <argument>%database_name%</argument>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd
+        http://symfony.com/schema/dic/symfony
+        https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
+
+    <services>
+        <service id="api.normalizer.object_to_id" class="RestOnPhp\Normalizer\ObjectToIdNormalizer" public="true">
+            <tag>api.normalizers</tag>
+        </service>
+
+        <service id="api.normalizer" class="RestOnPhp\Normalizer\RootNormalizer" public="true">
+            <argument type="service" id="api.metadata.xml"></argument>
+            <argument type="tagged_iterator" tag="api.normalizers"></argument>
+        </service>
+
+        <service id="api.denormalizer.id_to_object" class="RestOnPhp\Normalizer\IdToObjectDenormalizer" public="true">
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+            <argument type="service" id="api.metadata.xml"></argument>
+            <tag>api.denormalizers</tag>
+        </service>
+
+        <service id="api.denormalizer" class="RestOnPhp\Normalizer\RootDenormalizer" public="true">
+            <argument type="service" id="api.metadata.xml"></argument>
+            <argument type="tagged_iterator" tag="api.denormalizers"></argument>
+        </service>
+    </services>
+</container>

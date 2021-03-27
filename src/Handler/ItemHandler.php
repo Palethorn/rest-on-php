@@ -5,12 +5,10 @@ use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
 use RestOnPhp\Event\PostDeserializeEvent;
 use RestOnPhp\Event\PreDeserializeEvent;
+use RestOnPhp\Normalizer\RootDenormalizer;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -21,28 +19,28 @@ class ItemHandler {
     private $autofillers;
     private $metadata;
     private $validator;
-    private $serializer;
     private $repository;
     private $entityManager;
+    private $denormalizer;
 
     public function __construct(
-        EventDispatcher $dispatcher,
-        Serializer $serializer, 
+        EventDispatcher $dispatcher, 
         EntityManager $entityManager, 
         ValidatorInterface $validator, 
         XmlMetadata $metadata, 
         $default_autofilters = [], 
         $autofillers = [], 
-        RequestStack $requestStack
+        RequestStack $requestStack,
+        RootDenormalizer $denormalizer
     ) {
         $this->autofilters = [];
         $this->autofillers = [];
         $this->metadata = $metadata;
         $this->validator = $validator;
         $this->dispatcher = $dispatcher;
-        $this->serializer = $serializer;
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
+        $this->denormalizer = $denormalizer;
 
         foreach($default_autofilters as $filter) {
             $this->autofilters[get_class($filter)] = $filter;
@@ -108,10 +106,10 @@ class ItemHandler {
     public function post($resource_name, $id, $autofilters, $autofillers) {
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
         $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
-        $data = $this->serializer->deserialize($this->request->getContent(), $resource_metadata['entity'], 'json');
+        $data = json_decode($this->request->getContent(), true);
         $this->dispatcher->dispatch(new PostDeserializeEvent($resource_name, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
-
-        $errors = $this->validator->validate($data);
+        $object = $this->denormalizer->denormalizeItem($data, $resource_metadata);
+        $errors = $this->validator->validate($object);
 
         if(count($errors) > 0) {
             $message = '';
@@ -124,19 +122,19 @@ class ItemHandler {
         }
 
         foreach($autofillers as $autofiller) {
-            $autofiller->fill($data);
+            $autofiller->fill($object);
         }
 
-        $this->entityManager->persist($data);
+        $this->entityManager->persist($object);
         $this->entityManager->flush();
 
-        return $data;
+        return $object;
     }
 
     public function put($resource_name, $id, $default_autofilters, $autofillers = []) {
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
-        $data = $this->repository->get([ 
+        $object = $this->repository->get([ 
             'partial' => [], 
             'exact' => [ $id_field => $id ],
             'lte' => [],
@@ -149,15 +147,15 @@ class ItemHandler {
             'per_page' => 1
         ], [], true);
         
-        if(!$data) {
+        if(!$object) {
             throw new ResourceNotFoundException("Item not found");
         }
 
         $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
-        $this->serializer->deserialize($this->request->getContent(), $resource_metadata['entity'], 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $data]);
+        $data = json_decode($this->request->getContent(), true);
         $this->dispatcher->dispatch(new PostDeserializeEvent($resource_name, $this->request->getContent(), $data), PostDeserializeEvent::NAME);
-
-        $errors = $this->validator->validate($data);
+        $this->denormalizer->denormalizeItem($data, $resource_metadata, $object);
+        $errors = $this->validator->validate($object);
 
         if(count($errors) > 0) {
             $message = '';
@@ -170,13 +168,13 @@ class ItemHandler {
         }
 
         foreach($autofillers as $autofiller) {
-            $autofiller->fill($data);
+            $autofiller->fill($object);
         }
 
-        $this->entityManager->persist($data);
+        $this->entityManager->persist($object);
         $this->entityManager->flush();
 
-        return $data;
+        return $object;
     }
 
     public function delete($resource_name, $id, $default_autofilters) {

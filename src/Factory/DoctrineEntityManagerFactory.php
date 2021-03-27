@@ -7,7 +7,7 @@ use Doctrine\ORM\EntityManager;
 class DoctrineEntityManagerFactory {
     public function create(
         $database_driver,
-        $database_path,
+        // $database_path,
         $database_host,
         $database_port,
         $database_name,
@@ -37,7 +37,7 @@ class DoctrineEntityManagerFactory {
         $conn = array(
             'charset' => 'utf8mb4',
             'driver' => $database_driver,
-            'path' => $database_path,
+            // 'path' => $database_path,
             'dbname' => $database_name,
             'user' => $database_user,
             'password' => $database_password,

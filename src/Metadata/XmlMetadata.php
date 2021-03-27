@@ -2,6 +2,7 @@
 namespace RestOnPhp\Metadata;
 
 use Exception;
+use RuntimeException;
 use Symfony\Component\Config\Util\Exception\InvalidXmlException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
@@ -66,7 +67,8 @@ class XmlMetadata {
                 $field_name = $field_element->getAttribute('name');
                 $field_type = $field_element->getAttribute('type');
                 $field_id = $field_element->getAttribute('id');
-                $field_normalizer = $field_element->getAttribute('normalizer');
+                $field_normalizer = $field_element->getAttribute('normalizer') ? $field_element->getAttribute('normalizer') : null;
+                $field_denormalizer = $field_element->getAttribute('denormalizer') ? $field_element->getAttribute('denormalizer') : null;
                 $field_id = $field_id && $field_id == 'true' ? true : false;
                 $field_filter_type = $field_element->getAttribute('filter-type');
                 $field_filter_type = $field_filter_type ? $field_filter_type : 'exact';
@@ -75,7 +77,8 @@ class XmlMetadata {
                     'name' => $field_name,
                     'type' => $field_type,
                     'filter-type' => $field_filter_type,
-                    'normalizer' => $field_normalizer
+                    'normalizer' => $field_normalizer,
+                    'denormalizer' => $field_denormalizer
                 );
             }
 
@@ -169,6 +172,11 @@ class XmlMetadata {
 
     public function getFieldMetadataForEntity($entity_class, $field_name) {
         $resource = $this->getMetadataForEntity($entity_class);
+
+        if(!isset($resource['fields'][$field_name])) {
+            throw new RuntimeException(sprintf('Field metadata for %s does not exist.', $field_name));
+        }
+
         return $resource['fields'][$field_name];
     }
 

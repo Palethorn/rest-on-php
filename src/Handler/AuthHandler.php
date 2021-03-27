@@ -6,28 +6,36 @@ use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use RestOnPhp\Metadata\XmlMetadata;
+use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Serializer;
 
 class AuthHandler {
     private $signer;
     private $entity;
     private $request;
     private $jwtSecret;
-    private $serializer;
     private $entityManager;
+    private $normalizer;
+    private $xmlMetadata;
 
-    public function __construct(Serializer $serializer, EntityManager $entityManager, string $jwtSecret, string $entity, RequestStack $requestStack) {
+    public function __construct(
+        EntityManager $entityManager, 
+        string $jwtSecret, 
+        string $entity, 
+        RequestStack $requestStack,
+        RootNormalizer $normalizer,
+        XmlMetadata $xmlMetadata
+    ) {
         $this->entity = $entity;
         $this->signer = new Sha256();
         $this->jwtSecret = $jwtSecret;
-        $this->serializer = $serializer;
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
+        $this->normalizer = $normalizer;
+        $this->xmlMetadata = $xmlMetadata;
     }
 
     public function handle($entityClass = null) {
@@ -57,19 +65,14 @@ class AuthHandler {
 
         $user->setToken($token->__toString());
 
-        $normalized = $this->serializer->normalize(
-            $user, 
-            null,
-            [AbstractNormalizer::ATTRIBUTES => [ 'id', 'username', 'token', 'roles' ]]
-        );
+        $normalized = $this->normalizer->normalizeItem($user, $this->xmlMetadata->getMetadataFor('current_user'));
 
         return new Response(
-            $this->serializer->serialize($normalized, 'json'), 
+            json_encode($normalized), 
             200, 
             ['Content-Type' => 'application/json']
         );
     }
-
 
     /**
      * @return \RestOnPhp\Security\SecureUser
