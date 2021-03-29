@@ -34,7 +34,7 @@ class Authorization {
         try {
             $resourceMetadata = $this->metadata->getMetadataFor($resource_name);
         } catch(ResourceNotFoundException $e) {
-            $resourceMetadata = [ 'secure' => false, 'roles' => array() ];
+            $resourceMetadata = [ 'secure' => false, 'roles' => [] ];
         }
 
         if(isset($resourceMetadata['secure']) && $resourceMetadata['secure']) {

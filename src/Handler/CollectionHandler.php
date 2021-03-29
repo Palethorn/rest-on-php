@@ -35,7 +35,7 @@ class CollectionHandler {
             $default_autofilters[] = $this->autofilters[$filterClass];
         }
 
-        $f = $this->request->query->get('filter') ? $this->request->query->get('filter') : array();
+        $f = $this->request->query->get('filter') ? $this->request->query->get('filter') : [];
 
         $filters = [
             'exact' => [],
@@ -48,7 +48,7 @@ class CollectionHandler {
         ];
 
         foreach($f as $field => $filter) {
-            if(in_array($field, array('gt', 'lt', 'gte', 'lte', 'default'))) {
+            if(in_array($field, ['gt', 'lt', 'gte', 'lte', 'default'])) {
                 $filters[$field] = $filter;
                 continue;
             }
@@ -71,9 +71,9 @@ class CollectionHandler {
             $pagination_parameters = false;
         }
 
-        $order = $this->request->query->get('order') ? $this->request->query->get('order') : array(
+        $order = $this->request->query->get('order') ? $this->request->query->get('order') : [
             $id_field => 'ASC'
-        );
+        ];
 
         $entityMetadata = $this->entityManager->getClassMetadata($metadata['entity']);
 
@@ -110,8 +110,8 @@ class CollectionHandler {
 
         $total_pages = ceil($total_items / $pagination_parameters['per_page']);
 
-        $pagination = array(
-        );
+        $pagination = [
+        ];
 
         if($pagination_parameters['page'] - 1 > 0) {
             $pagination['previous_page'] = $previous_page;

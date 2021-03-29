@@ -2,6 +2,7 @@
 namespace RestOnPhp\Command;
 
 use Doctrine\ORM\EntityManager;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,9 +26,9 @@ final class CreateUserCommand extends Command {
         $username = $input->getArgument('username');
         $password = $input->getArgument('password');
         
-        $password = password_hash($password, PASSWORD_BCRYPT, array(
+        $password = password_hash($password, PASSWORD_BCRYPT, [
             'cost' => 15
-        ));
+        ]);
 
         $this->user->setUsername($username);
         $this->user->setPassword($password);

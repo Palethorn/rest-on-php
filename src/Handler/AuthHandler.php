@@ -46,9 +46,9 @@ class AuthHandler {
             throw new UnauthorizedHttpException('username, password', 'Wrong username or password');
         }
 
-        $user = $this->entityManager->getRepository($this->entity)->findOneBy(array(
+        $user = $this->entityManager->getRepository($this->entity)->findOneBy([
             'username' => $params['username']
-        ));
+        ]);
 
         if(!$user) {
             throw new UnauthorizedHttpException('username, password', 'Wrong username or password');
@@ -90,9 +90,9 @@ class AuthHandler {
 
         $user_id = $token->getClaim('id');
 
-        $user = $this->entityManager->getRepository($this->entity)->findOneBy(array(
+        $user = $this->entityManager->getRepository($this->entity)->findOneBy([
             'id' => $user_id
-        ));
+        ]);
 
         if(!$user) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');

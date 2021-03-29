@@ -21,9 +21,9 @@ class DoctrineEntityManagerFactory {
         $config->setProxyDir($cache_dir . '/doctrine_proxies');
         $config->setProxyNamespace('Proxy');
 
-        $namespaces = array(
+        $namespaces = [
             $config_dir . '/doctrine_mapping' => $namespace
-        );
+        ];
         $driver = new \Doctrine\ORM\Mapping\Driver\SimplifiedXmlDriver($namespaces);
         $config->setMetadataDriverImpl($driver);
 
@@ -34,7 +34,7 @@ class DoctrineEntityManagerFactory {
         $config->setMetadataCacheImpl(new Doctrine\Common\Cache\FilesystemCache($cache_dir . '/doctrine_metadata'));
 
         // database configuration parameters
-        $conn = array(
+        $conn = [
             'charset' => 'utf8mb4',
             'driver' => $database_driver,
             // 'path' => $database_path,
@@ -43,7 +43,7 @@ class DoctrineEntityManagerFactory {
             'password' => $database_password,
             'host' => $database_host,
             'port' => $database_port,
-        );
+        ];
 
         // obtaining the entity manager
         return EntityManager::create($conn, $config);

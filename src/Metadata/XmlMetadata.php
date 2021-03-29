@@ -43,7 +43,7 @@ class XmlMetadata {
             $id = $resource->getAttribute('id');
             $secure = $resource->getAttribute('secure');
             $roles = $resource->getAttribute('roles');
-            $roles = $roles ? explode('|', $roles) : array();
+            $roles = $roles ? explode('|', $roles) : [];
             $secure = $secure == 'true' ? true : false;
             $handler = $resource->getAttribute('handler');
             $routes = [];
@@ -56,11 +56,11 @@ class XmlMetadata {
                 $route_method = $route_element->getAttribute('method');
                 $route_path = $route_element->getAttribute('path');
 
-                $routes[$route_name] = array(
+                $routes[$route_name] = [
                     'name' => $route_name,
                     'method' => $route_method,
                     'path' => $route_path
-                );
+                ];
             }
 
             foreach($resource->getElementsByTagName('field') as $field_element) {
@@ -73,13 +73,13 @@ class XmlMetadata {
                 $field_filter_type = $field_element->getAttribute('filter-type');
                 $field_filter_type = $field_filter_type ? $field_filter_type : 'exact';
 
-                $fields[$field_name] = array(
+                $fields[$field_name] = [
                     'name' => $field_name,
                     'type' => $field_type,
                     'filter-type' => $field_filter_type,
                     'normalizer' => $field_normalizer,
                     'denormalizer' => $field_denormalizer
-                );
+                ];
             }
 
             foreach($resource->getElementsByTagName('autofilter') as $field_element) {
@@ -90,7 +90,7 @@ class XmlMetadata {
                 $autofillers[] = $field_element->getAttribute('class');
             }
 
-            $parsed[$name] = array(
+            $parsed[$name] = [
                 'name' => $name,
                 'entity' => $entity,
                 'id' => $id,
@@ -101,7 +101,7 @@ class XmlMetadata {
                 'fields' => $fields,
                 'autofilters' => $autofilters,
                 'autofillers' => $autofillers
-            );
+            ];
         }
 
         return $parsed;
@@ -109,7 +109,7 @@ class XmlMetadata {
 
     public function getNormalizerFieldsFor(string $name) {
         $resource = null;
-        $fields = array();
+        $fields = [];
 
         $resource = $this->getMetadataFor($name);
 
@@ -135,13 +135,13 @@ class XmlMetadata {
                 $fields[] = $field;
             }
 
-            $docs[] = array(
+            $docs[] = [
                 'name' => $resource['name'],
                 'entity' => $resource['entity'],
                 'id' => $resource['id'],
                 'fields' => $fields,
                 'routes' => $routes
-            );
+            ];
         }
 
         return $docs;
