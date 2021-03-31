@@ -27,11 +27,16 @@ class RootDenormalizer {
             }
 
             $value = $data[$field['name']];
+            $entity_metadata = null;
+
+            if(!in_array($field['type'], [ 'integer', 'string', 'boolean', 'text' ])) {
+                $entity_metadata = $this->xmlMetadata->getMetadataForEntity($field['type']);
+            }
 
             if(isset($field['denormalizer'])) {
                 $value = $this->denormalizers[$field['denormalizer']]->denormalizeItem(
                     $value, 
-                    $this->xmlMetadata->getMetadataForEntity($field['type'])
+                    $entity_metadata
                 );
             }
 

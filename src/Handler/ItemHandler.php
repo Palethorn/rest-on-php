@@ -3,6 +3,7 @@ namespace RestOnPhp\Handler;
 
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
+use Symfony\Component\HttpFoundation\Response;
 use RestOnPhp\Event\PostDeserializeEvent;
 use RestOnPhp\Event\PreDeserializeEvent;
 use RestOnPhp\Normalizer\RootDenormalizer;
@@ -78,7 +79,13 @@ class ItemHandler {
             $default_autofillers[] = $this->autofillers[$autofillerClass];
         }
 
-        return [ 'item', $this->$method($resource_name, $id, $default_autofilters, $default_autofillers) ];
+        $result = $this->$method($resource_name, $id, $default_autofilters, $default_autofillers);
+
+        if($result instanceof Response) {
+            return $result;
+        }
+
+        return [ 'item',  $result ];
     }
 
     public function get($resource_name, $id, $default_autofilters) {
@@ -199,7 +206,7 @@ class ItemHandler {
         $this->entityManager->remove($data);
         $this->entityManager->flush();
 
-        return '';
+        return new Response('', 204, []);
     }
 
     public function patch($resource_name, $id, $default_autofilters, $autofillers) {
