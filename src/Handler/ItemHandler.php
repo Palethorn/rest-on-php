@@ -6,6 +6,8 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\Response;
 use RestOnPhp\Event\PostDeserializeEvent;
 use RestOnPhp\Event\PreDeserializeEvent;
+use RestOnPhp\Event\ResourcePostDeleteEvent;
+use RestOnPhp\Event\ResourcePreDeleteEvent;
 use RestOnPhp\Normalizer\RootDenormalizer;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -203,8 +205,10 @@ class ItemHandler {
             throw new ResourceNotFoundException("Item not found");
         }
 
+        $this->dispatcher->dispatch(new ResourcePreDeleteEvent($data), ResourcePreDeleteEvent::NAME);
         $this->entityManager->remove($data);
         $this->entityManager->flush();
+        $this->dispatcher->dispatch(new ResourcePostDeleteEvent($data), ResourcePostDeleteEvent::NAME);
 
         return new Response('', 204, []);
     }

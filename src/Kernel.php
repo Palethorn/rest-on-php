@@ -262,21 +262,42 @@ class Kernel implements HttpKernelInterface {
 
             $response = new Response($serialized, 200, [ 'Content-Type' => 'application/json' ]);
         } catch(ValidatorException $e) {
-            $response = new Response(json_encode([ 'message' => $e->getMessage()], 'json'), 400);
+            $response = new Response(json_encode([ 
+                'message' => 'Invalid input',
+                'exception_message' => $e->getMessage()
+            ], 'json'), 400);
         } catch(UniqueConstraintViolationException $e) {
             $response = new Response(
-                json_encode(['message' => 'Item already exists']), 409, ['Content-Type' => 'application/json']
+                json_encode([
+                    'message' => 'Item already exists',
+                    'exception_message' => $e->getMessage()
+                ]), 409, ['Content-Type' => 'application/json']
             );
         } catch(NoConfigurationException $e) { 
-            $response = new Response(json_encode('Not found! ' . $e->getMessage()), Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
+            $response = new Response(json_encode([
+                'message' => 'Not found!',
+                'exception_message' => $e->getMessage()
+            ]), Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
         } catch (ResourceNotFoundException $e) {
-		    $response = new Response(json_encode('Not found! ' . $e->getMessage()), Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
+		    $response = new Response(json_encode([
+                'message' => 'Not found!',
+                'exception_message' => $e->getMessage()
+            ]), Response::HTTP_NOT_FOUND, ['Content-Type' => 'application/json']);
 		} catch (MethodNotAllowedException $e) {
-            $response = new Response(json_encode('Not allowed!'), Response::HTTP_METHOD_NOT_ALLOWED, ['Content-Type' => 'application/json']);
+            $response = new Response(json_encode([
+                'message' => 'Not allowed!',
+                'exception_message' => $e->getMessage()
+            ]), Response::HTTP_METHOD_NOT_ALLOWED, ['Content-Type' => 'application/json']);
         } catch(HttpException $e) {
-            $response = new Response(json_encode($e->getMessage()), $e->getStatusCode(), ['Content-Type' => 'application/json']);
+            $response = new Response(json_encode([
+                'message' => 'HTTP exception',
+                'exception_message' => $e->getMessage()
+            ]), $e->getStatusCode(), ['Content-Type' => 'application/json']);
         } catch(NotEncodableValueException $e) {
-            $response = new Response(json_encode($e->getMessage()), 400, ['Content-Type' => 'application/json']);
+            $response = new Response(json_encode([
+                'message' => 'Not encodable',
+                'exception_message' => $e->getMessage()
+            ]), 400, ['Content-Type' => 'application/json']);
         }
 
         $this->logger->info('RESPONSE', [
