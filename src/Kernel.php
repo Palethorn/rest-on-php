@@ -228,6 +228,10 @@ class Kernel implements HttpKernelInterface {
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
 
+        if(Request::METHOD_OPTIONS == $request->getMethod()) {
+            return new Response('', 200);
+        }
+
         $this->logger->info('REQUEST', [
             'client_ip' => $request->getClientIp(),
             'method' => $request->getMethod(),

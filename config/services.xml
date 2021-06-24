@@ -14,7 +14,7 @@
         <service id="api.event.dispatcher" class="Symfony\Component\EventDispatcher\EventDispatcher" public="true" />
         <service id="doctrine.factory.entity_manager" class="RestOnPhp\Factory\DoctrineEntityManagerFactory" />
 
-        <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager">
+        <service id="doctrine.orm.entity_manager" class="Doctrine\ORM\EntityManager" public="true">
             <factory service="doctrine.factory.entity_manager" method="create" />
             <argument>%database_driver%</argument>
             <!--<argument>%database_path%</argument>-->
