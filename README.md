@@ -483,9 +483,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HelloHandler {
     public function handle($who) {
-        return new Response(sprintf('Hello %s!', $who), 200, [
+        return new HandlerResponse(HandlerResponse::CARDINALITY_NONE, new Response(sprintf('Hello %s!', $who), 200, [
             'Content-Type' => 'text/plain'
-        ]);
+        ]));
     }
 }
 ```

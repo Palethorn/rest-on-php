@@ -24,6 +24,8 @@
         <xs:attribute name="secure" type="xs:boolean" default="false"></xs:attribute>
         <xs:attribute name="roles"></xs:attribute>
         <xs:attribute name="handler"></xs:attribute>
+        <xs:attribute name="normalizer"></xs:attribute>
+        <xs:attribute name="denormalizer"></xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="autofilter">

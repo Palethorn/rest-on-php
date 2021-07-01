@@ -46,6 +46,8 @@ class XmlMetadata {
             $roles = $roles ? explode('|', $roles) : [];
             $secure = $secure == 'true' ? true : false;
             $handler = $resource->getAttribute('handler');
+            $normalizer = $resource->getAttribute('normalizer') ? $resource->getAttribute('normalizer') : null;
+            $denormalizer = $resource->getAttribute('denormalizer') ? $resource->getAttribute('denormalizer') : null;
             $routes = [];
             $fields = [];
             $autofilters = [];
@@ -97,6 +99,8 @@ class XmlMetadata {
                 'secure' => $secure,
                 'roles' => $roles,
                 'handler' => $handler,
+                'normalizer' => $normalizer,
+                'denormalizer' => $denormalizer,
                 'routes' => $routes,
                 'fields' => $fields,
                 'autofilters' => $autofilters,
