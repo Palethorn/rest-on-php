@@ -66,6 +66,14 @@ class CollectionHandler {
                 'page' => 1,
                 'per_page' => 10
             ];
+        } else {
+            if(!isset($pagination_parameters['page'])) {
+                $pagination_parameters['page'] = 1;
+            }
+
+            if(!isset($pagination_parameters['per_page'])) {
+                $pagination_parameters['per_page'] = 10;
+            }
         }
 
         if($pagination_parameters == '0' || $pagination_parameters == 'false') {
