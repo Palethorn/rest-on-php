@@ -19,7 +19,8 @@
         "symfony/finder": "^5.0",
         "lcobucci/jwt": "^3.3",
         "ocramius/package-versions": "1.4.2",
-        "ocramius/proxy-manager": "2.2.3"
+        "ocramius/proxy-manager": "2.2.3",
+        "symfony/cache": "^5.3"
     },
     "autoload":{
         "psr-4": {
