@@ -33,8 +33,12 @@ class RootNormalizer {
             $getter = 'get' . ucfirst($field['name']);
             $value = $data->$getter();
 
+
             if($value instanceof DateTime) {
                 $value = $value->format('Y-m-d H:i:s');
+            } else if(isset($field['normalizer']) && 'string' == $field['type']) {
+                $normalizer = $this->normalizers[$field['normalizer']];
+                $value = $normalizer->normalizeItem($value, [], $data);
             } else if(isset($field['normalizer'])) {
                 $entity = $field['type'];
                 $normalizer = $this->normalizers[$field['normalizer']];

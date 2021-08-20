@@ -22,4 +22,9 @@ interface SecureUser {
      * @return string
      */
     function getToken();
+
+    /**
+     * @var array
+     */
+    function getRoles();
 }
