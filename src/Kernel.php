@@ -8,6 +8,7 @@ use RestOnPhp\Event\PostNormalizeEvent;
 use RestOnPhp\Event\PostSerializeEvent;
 use RestOnPhp\Event\PreNormalizeEvent;
 use RestOnPhp\Event\PreSerializeEvent;
+use RestOnPhp\Handler\Response\HandlerResponseInterface;
 use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
@@ -146,25 +147,29 @@ class Kernel implements HttpKernelInterface {
         }
     }
 
-    private function normalize($resource_name, $data) {
+    private function normalize($resource_name, HandlerResponseInterface $handler_response) {
         $this->logger->info('NORMALIZE', [
             'resource_name' => $resource_name
         ]);
 
-        /**
-         * @var RootNormalizer
-         */
-        $normalizer = $this->dependencyContainer->get('api.normalizer');
-
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
 
-        if($data[0] == 'collection') {
-            $normalized = ['items' => $normalizer->normalizeCollection($data[1], $resource_metadata) ];
-            $normalized['pagination'] = $data[2];
-        } else if($data[0] == 'item') {
-            $normalized =$normalizer->normalizeItem($data[1], $resource_metadata);
+        if($resource_metadata['normalizer']) {
+            $normalizer = $this->dependencyContainer->get($resource_metadata['normalizer']);    
         } else {
-            $normalized = $data;
+            /**
+             * @var RootNormalizer
+             */
+            $normalizer = $this->dependencyContainer->get('api.normalizer');
+        }
+
+        if($handler_response->getCardinality() == HandlerResponseInterface::CARDINALITY_COLLECTION) {
+            $normalized = ['items' => $normalizer->normalizeCollection($handler_response->getData(), $resource_metadata) ];
+            $normalized['pagination'] = $handler_response->getPagination();
+        } else if($handler_response->getCardinality() == HandlerResponseInterface::CARDINALITY_SINGLE) {
+            $normalized = $normalizer->normalizeItem($handler_response->getData(), $resource_metadata);
+        } else {
+            $normalized = $handler_response->getData();
         }
 
         return $normalized;
@@ -183,7 +188,7 @@ class Kernel implements HttpKernelInterface {
         $parameters = [];
 
         $entityClass = null;
-        $handler_id = $attributes['_controller'];
+        $handler_id = $attributes['handler'];
         $resource_metadata = $this->metadata->getMetadataFor($attributes['resource']);
         $entityClass = $resource_metadata['entity'];
 
@@ -227,6 +232,9 @@ class Kernel implements HttpKernelInterface {
     }
 
     public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
+        if(Request::METHOD_OPTIONS == $request->getMethod()) {
+            return new Response('', 200);
+        }
 
         $this->logger->info('REQUEST', [
             'client_ip' => $request->getClientIp(),
@@ -246,19 +254,23 @@ class Kernel implements HttpKernelInterface {
             list($handler, $reflectionMethod, $args) = $this->getHandler();
             $resource_name = isset($args[0]) ? $args[0] : null;
             $this->security($resource_name);
-            $data = $reflectionMethod->invokeArgs($handler, $args);
 
-            if($data instanceof Response) {
-                return $data;
+            /**
+             * @var HandlerResponseInterface
+             */
+            $handler_response = $reflectionMethod->invokeArgs($handler, $args);
+
+            if($handler_response->getData() instanceof Response) {
+                return $handler_response->getData();
             }
 
-            $this->eventDispatcher->dispatch(new PreNormalizeEvent($resource_name, $data), PreNormalizeEvent::NAME);
-            $normalized = $this->normalize($resource_name, $data);
-            $this->eventDispatcher->dispatch(new PostNormalizeEvent($resource_name, $data, $normalized), PostNormalizeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PreNormalizeEvent($resource_name, $handler_response), PreNormalizeEvent::NAME);
+            $normalized = $this->normalize($resource_name, $handler_response);
+            $this->eventDispatcher->dispatch(new PostNormalizeEvent($resource_name, $handler_response, $normalized), PostNormalizeEvent::NAME);
 
-            $this->eventDispatcher->dispatch(new PreSerializeEvent($resource_name, $data, $normalized), PreSerializeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PreSerializeEvent($resource_name, $handler_response, $normalized), PreSerializeEvent::NAME);
             $serialized = $this->serialize($normalized);
-            $this->eventDispatcher->dispatch(new PostSerializeEvent($resource_name, $data, $normalized, $serialized), PostSerializeEvent::NAME);
+            $this->eventDispatcher->dispatch(new PostSerializeEvent($resource_name, $handler_response, $normalized, $serialized), PostSerializeEvent::NAME);
 
             $response = new Response($serialized, 200, [ 'Content-Type' => 'application/json' ]);
         } catch(ValidatorException $e) {

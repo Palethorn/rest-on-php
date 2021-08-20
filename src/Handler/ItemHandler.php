@@ -8,6 +8,7 @@ use RestOnPhp\Event\PostDeserializeEvent;
 use RestOnPhp\Event\PreDeserializeEvent;
 use RestOnPhp\Event\ResourcePostDeleteEvent;
 use RestOnPhp\Event\ResourcePreDeleteEvent;
+use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Normalizer\RootDenormalizer;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -87,7 +88,7 @@ class ItemHandler {
             return $result;
         }
 
-        return [ 'item',  $result ];
+        return new HandlerResponse(HandlerResponse::CARDINALITY_SINGLE, $result, null);
     }
 
     public function get($resource_name, $id, $default_autofilters) {

@@ -6,6 +6,7 @@ use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key;
+use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
 use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -67,11 +68,7 @@ class AuthHandler {
 
         $normalized = $this->normalizer->normalizeItem($user, $this->xmlMetadata->getMetadataFor('current_user'));
 
-        return new Response(
-            json_encode($normalized), 
-            200, 
-            ['Content-Type' => 'application/json']
-        );
+        return new HandlerResponse(HandlerResponse::CARDINALITY_NONE, $normalized);
     }
 
     /**

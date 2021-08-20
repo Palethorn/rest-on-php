@@ -4,6 +4,7 @@ namespace RestOnPhp\Handler;
 use Doctrine\ORM\Cache\Region\DefaultRegion;
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
+use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Repository\DefaultRepository;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -65,6 +66,14 @@ class CollectionHandler {
                 'page' => 1,
                 'per_page' => 10
             ];
+        } else {
+            if(!isset($pagination_parameters['page'])) {
+                $pagination_parameters['page'] = 1;
+            }
+
+            if(!isset($pagination_parameters['per_page'])) {
+                $pagination_parameters['per_page'] = 10;
+            }
         }
 
         if($pagination_parameters == '0' || $pagination_parameters == 'false') {
@@ -87,7 +96,7 @@ class CollectionHandler {
         $entityRepository = $this->entityManager->getRepository($metadata['entity']);
         $paginator = $entityRepository->get($filters, $pagination_parameters, $order);
         $pagination = $this->pagination($resource_name, $paginator, $pagination_parameters);
-        return [ 'collection', $paginator, $pagination ];
+        return new HandlerResponse(HandlerResponse::CARDINALITY_COLLECTION, $paginator, $pagination);
     }
 
     private function pagination($resource_name, $paginator, $pagination_parameters) {

@@ -1,6 +1,8 @@
 <?php
 namespace RestOnPhp\Handler;
 
+use JMS\Serializer\Handler\HandlerRegistryInterface;
+use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -12,10 +14,6 @@ class DocsHandler {
     }
 
     public function handle() {
-        return new Response(
-            json_encode($this->metadata->getMetadataForDocs()), 
-            200, 
-            ['Content-Type' => 'application/json']
-        );
+        return new HandlerResponse(HandlerResponse::CARDINALITY_NONE, $this->metadata->getMetadataForDocs());
     }
 }
