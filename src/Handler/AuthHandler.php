@@ -62,7 +62,7 @@ class AuthHandler {
             ->builder()
             ->issuedAt(new DateTimeImmutable())
             ->withClaim('id', $user->getId())
-            ->getToken($this->signer, new InMemory($this->jwtSecret));
+            ->getToken($this->jwtConfiguration->signer(), $this->jwtConfiguration->signingKey());
 
 
         $user->setToken($token->toString());
