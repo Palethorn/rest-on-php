@@ -31,11 +31,11 @@ class ItemHandler {
         EventDispatcher $dispatcher, 
         EntityManager $entityManager, 
         ValidatorInterface $validator, 
-        XmlMetadata $metadata, 
+        XmlMetadata $metadata,
+        RequestStack $requestStack,
+        RootDenormalizer $denormalizer, 
         $default_autofilters = [], 
         $autofillers = [], 
-        RequestStack $requestStack,
-        RootDenormalizer $denormalizer
     ) {
         $this->autofilters = [];
         $this->autofillers = [];

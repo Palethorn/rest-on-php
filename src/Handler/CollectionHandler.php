@@ -14,7 +14,7 @@ class CollectionHandler {
     private $entityManager;
     private $requestStack;
 
-    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_autofilters = [], RequestStack $requestStack) {
+    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, RequestStack $requestStack, $default_autofilters = []) {
         $this->entityManager = $entityManager;
         $this->metadata = $metadata;
         $this->autofilters = [];

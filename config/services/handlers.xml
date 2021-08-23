@@ -10,18 +10,19 @@
         <service id="api.handler.collection" class="RestOnPhp\Handler\CollectionHandler" public="true">
             <argument type="service" id="doctrine.orm.entity_manager"></argument>
             <argument type="service" id="api.metadata.xml"></argument>
-            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
             <argument type="service" id="api.request.stack"></argument>
+            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
         </service>
+
         <service id="api.handler.item" class="RestOnPhp\Handler\ItemHandler" public="true">
             <argument type="service" id="api.event.dispatcher"></argument>
             <argument type="service" id="doctrine.orm.entity_manager"></argument>
             <argument type="service" id="api.validator"></argument>
             <argument type="service" id="api.metadata.xml"></argument>
-            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
-            <argument type="tagged_iterator" tag="api.autofillers.default"></argument>
             <argument type="service" id="api.request.stack"></argument>
             <argument type="service" id="api.denormalizer"></argument>
+            <argument type="tagged_iterator" tag="api.autofilters.default"></argument>
+            <argument type="tagged_iterator" tag="api.autofillers.default"></argument>
         </service>
         <service id="api.handler.docs" class="RestOnPhp\Handler\DocsHandler" public="true">
             <argument type="service" id="api.metadata.xml"></argument>
