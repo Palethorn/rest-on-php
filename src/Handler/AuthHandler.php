@@ -1,6 +1,7 @@
 <?php
 namespace RestOnPhp\Handler;
 
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
@@ -60,7 +61,7 @@ class AuthHandler {
         }
         
         $token = (new Builder())
-            ->issuedAt(time())
+            ->issuedAt(new DateTimeImmutable())
             ->withClaim('id', $user->getId())
             ->getToken($this->signer, new Key($this->jwtSecret));
 

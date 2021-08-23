@@ -1,7 +1,6 @@
 <?php
 namespace RestOnPhp\Handler;
 
-use Doctrine\ORM\Cache\Region\DefaultRegion;
 use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
 use RestOnPhp\Handler\Response\HandlerResponse;
@@ -13,6 +12,7 @@ class CollectionHandler {
     private $request;
     private $metadata;
     private $entityManager;
+    private $requestStack;
 
     public function __construct(EntityManager $entityManager, XmlMetadata $metadata, $default_autofilters = [], RequestStack $requestStack) {
         $this->entityManager = $entityManager;
@@ -23,10 +23,12 @@ class CollectionHandler {
             $this->autofilters[get_class($autofilter)] = $autofilter;
         }
 
-        $this->request = $requestStack->getCurrentRequest();
+        $this->requestStack = $requestStack;
     }
 
     public function handle($resource_name) {
+        $this->request = $this->requestStack->getCurrentRequest();
+
         $metadata = $this->metadata->getMetadataFor($resource_name);
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $filterMetadata = $this->metadata->getAutofilterMetadataFor($resource_name);
