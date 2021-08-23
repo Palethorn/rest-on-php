@@ -3,38 +3,35 @@ namespace RestOnPhp\Handler;
 
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
-use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Signer\Key;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Validation\Validator;
 use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
 use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class AuthHandler {
     private $signer;
     private $entity;
     private $request;
-    private $jwtSecret;
+    private $jwtConfiguration;
     private $entityManager;
     private $normalizer;
     private $xmlMetadata;
 
     public function __construct(
         EntityManager $entityManager, 
-        string $jwtSecret, 
+        Configuration $jwtConfiguration, 
         string $entity, 
         RequestStack $requestStack,
         RootNormalizer $normalizer,
         XmlMetadata $xmlMetadata
     ) {
         $this->entity = $entity;
-        $this->signer = new Sha256();
-        $this->jwtSecret = $jwtSecret;
+        $this->jwtConfiguration = $jwtConfiguration;
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
         $this->normalizer = $normalizer;
@@ -61,12 +58,14 @@ class AuthHandler {
             throw new UnauthorizedHttpException('username, password', 'Wrong username or password');
         }
         
-        $token = (new Builder())
+        $token = $this->jwtConfiguration
+            ->builder()
             ->issuedAt(new DateTimeImmutable())
             ->withClaim('id', $user->getId())
             ->getToken($this->signer, new InMemory($this->jwtSecret));
 
-        $user->setToken($token->__toString());
+
+        $user->setToken($token->toString());
 
         $normalized = $this->normalizer->normalizeItem($user, $this->xmlMetadata->getMetadataFor('current_user'));
 
@@ -81,13 +80,13 @@ class AuthHandler {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }
 
-        $token = (new Parser())->parse($token);
+        $token = $this->jwtConfiguration->parser()->parse($token);
 
-        if(!$token->verify($this->signer, $this->jwtSecret)) {
+        if(!$this->jwtConfiguration->validator()->validate($token)) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }
 
-        $user_id = $token->getClaim('id');
+        $user_id = $token->claims()->get('id');
 
         $user = $this->entityManager->getRepository($this->entity)->findOneBy([
             'id' => $user_id

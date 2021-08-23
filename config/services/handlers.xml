@@ -28,7 +28,7 @@
         </service>
         <service id="api.handler.auth" class="RestOnPhp\Handler\AuthHandler" public="true">
             <argument type="service" id="doctrine.orm.entity_manager"></argument>
-            <argument>%jwt_secret%</argument>
+            <argument type="service" id="api.security.jwt.configuration"></argument>
             <argument>%user_entity%</argument>
             <argument type="service" id="api.request.stack"></argument>
             <argument type="service" id="api.normalizer"></argument>
