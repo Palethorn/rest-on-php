@@ -83,16 +83,13 @@ class AuthHandler {
 
         $token = $this->jwtConfiguration->parser()->parse($token);
 
-        $this->jwtConfiguration->setValidationConstraints(
+        if(!$this->jwtConfiguration->validator()->validate(
+            $token, 
             new SignedWith(
                 $this->jwtConfiguration->signer(), 
                 $this->jwtConfiguration->signingKey()
             )
-        );
-
-        $this->jwtConfiguration->validationConstraints();
-
-        if(!$this->jwtConfiguration->validator()->validate($token)) {
+        )) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }
 
