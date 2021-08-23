@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManager;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
@@ -36,6 +37,13 @@ class AuthHandler {
         $this->request = $requestStack->getCurrentRequest();
         $this->normalizer = $normalizer;
         $this->xmlMetadata = $xmlMetadata;
+
+        $this->jwtConfiguration->setValidationConstraints(
+            new SignedWith(
+                $this->jwtConfiguration->signer(), 
+                $this->jwtConfiguration->signingKey()
+            )
+        );
     }
 
     public function handle($entityClass = null) {
@@ -82,6 +90,8 @@ class AuthHandler {
 
         $token = $this->jwtConfiguration->parser()->parse($token);
 
+        $this->jwtConfiguration->validationConstraints();
+        
         if(!$this->jwtConfiguration->validator()->validate($token)) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }
