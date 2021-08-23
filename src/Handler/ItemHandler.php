@@ -35,7 +35,7 @@ class ItemHandler {
         RequestStack $requestStack,
         RootDenormalizer $denormalizer, 
         $default_autofilters = [], 
-        $autofillers = [], 
+        $autofillers = []
     ) {
         $this->autofilters = [];
         $this->autofillers = [];
