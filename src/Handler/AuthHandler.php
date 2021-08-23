@@ -7,6 +7,7 @@ use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
 use RestOnPhp\Normalizer\RootNormalizer;
@@ -63,7 +64,7 @@ class AuthHandler {
         $token = (new Builder())
             ->issuedAt(new DateTimeImmutable())
             ->withClaim('id', $user->getId())
-            ->getToken($this->signer, new Key($this->jwtSecret));
+            ->getToken($this->signer, new InMemory($this->jwtSecret));
 
         $user->setToken($token->__toString());
 
