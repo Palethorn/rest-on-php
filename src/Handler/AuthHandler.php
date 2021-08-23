@@ -37,13 +37,6 @@ class AuthHandler {
         $this->request = $requestStack->getCurrentRequest();
         $this->normalizer = $normalizer;
         $this->xmlMetadata = $xmlMetadata;
-
-        $this->jwtConfiguration->setValidationConstraints(
-            new SignedWith(
-                $this->jwtConfiguration->signer(), 
-                $this->jwtConfiguration->signingKey()
-            )
-        );
     }
 
     public function handle($entityClass = null) {
@@ -90,8 +83,15 @@ class AuthHandler {
 
         $token = $this->jwtConfiguration->parser()->parse($token);
 
+        $this->jwtConfiguration->setValidationConstraints(
+            new SignedWith(
+                $this->jwtConfiguration->signer(), 
+                $this->jwtConfiguration->signingKey()
+            )
+        );
+
         $this->jwtConfiguration->validationConstraints();
-        
+
         if(!$this->jwtConfiguration->validator()->validate($token)) {
             throw new UnauthorizedHttpException('Unable to verify token', 'Unauthorized');
         }
