@@ -36,7 +36,7 @@ class RootNormalizer {
 
             if($value instanceof DateTime) {
                 $value = $value->format('Y-m-d H:i:s');
-            } else if(isset($field['normalizer']) && 'string' == $field['type']) {
+            } else if(isset($field['normalizer']) && in_array($field['type'], ['boolean', 'string'])) {
                 $normalizer = $this->normalizers[$field['normalizer']];
                 $value = $normalizer->normalizeItem($value, [], $data);
             } else if(isset($field['normalizer'])) {
