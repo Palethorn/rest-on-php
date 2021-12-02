@@ -4,7 +4,12 @@ namespace RestOnPhp\Factory;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
+/**
+ * @property EntityManager $entityManager
+ */
 class DoctrineEntityManagerFactory {
+    private $entityManager;
+
     public function create(
         $database_driver,
         // $database_path,
@@ -17,6 +22,10 @@ class DoctrineEntityManagerFactory {
         $cache_dir,
         $namespace
     ) {
+        if($this->entityManager) {
+            return $this->entityManager;
+        }
+
         $config = new \Doctrine\ORM\Configuration();
         $config->setProxyDir($cache_dir . '/doctrine_proxies');
         $config->setProxyNamespace('Proxy');
@@ -47,6 +56,6 @@ class DoctrineEntityManagerFactory {
         ];
 
         // obtaining the entity manager
-        return EntityManager::create($conn, $config);
+        return $this->entityManager = EntityManager::create($conn, $config);
     }
 }

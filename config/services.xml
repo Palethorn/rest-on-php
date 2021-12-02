@@ -28,6 +28,14 @@
             <argument>%entity_namespace%</argument>
         </service>
 
+        <service id="api.factory.pdo" class="RestOnPhp\Factory\PdoConnectionFactory" public="true">
+            <argument type="service" id="doctrine.orm.entity_manager"></argument>
+        </service>
+
+        <service id="api.connection.pdo" class="PDO" public="true">
+            <factory service="api.factory.pdo" method="getConnection"></factory>
+        </service>
+
         <service id="api.request.stack" class="Symfony\Component\HttpFoundation\RequestStack" public="true" />
 
         <service id="api.metadata.xml" class="RestOnPhp\Metadata\XmlMetadata" public="true">
