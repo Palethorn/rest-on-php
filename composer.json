@@ -5,6 +5,8 @@
     "type": "library",
     "keywords": ["rest", "php", "framework", "symfony", "components", "on", "palethorn"],
     "require": {
+        "ext-pdo": "*",
+        "ext-xml": "*",
         "symfony/dependency-injection": "^5.0",
         "symfony/http-foundation": "^5.0",
         "symfony/routing": "^5.0",
