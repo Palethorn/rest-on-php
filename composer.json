@@ -19,7 +19,7 @@
         "symfony/property-access": "^5.0",
         "symfony/validator": "^5.0",
         "symfony/finder": "^5.0",
-        "lcobucci/jwt": "^3.3",
+        "lcobucci/jwt": "^4.1",
         "ocramius/package-versions": "1.4.2",
         "ocramius/proxy-manager": "2.2.3",
         "symfony/cache": "^5.3"

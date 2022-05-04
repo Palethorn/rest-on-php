@@ -1,6 +1,7 @@
 <?php
 namespace RestOnPhp\Factory;
 
+use Doctrine\Common\Cache\FilesystemCache;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -39,9 +40,8 @@ class DoctrineEntityManagerFactory {
         if(!is_dir($cache_dir . '/doctrine_metadata')) {
             mkdir($cache_dir . '/doctrine_metadata', 0777, true);
         }
-
-        $metadataCache = new FilesystemAdapter('', 0, $cache_dir . '/doctrine_metadata');
-        $config->setMetadataCache($metadataCache);
+        
+        $config->setMetadataCacheImpl(new FilesystemCache($cache_dir . '/doctrine_metadata'));
 
         // database configuration parameters
         $conn = [
