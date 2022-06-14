@@ -30,7 +30,7 @@ class XmlMetadata {
         $this->metadata->load($metadata_file);
         
         if(!@$this->metadata->schemaValidate(__DIR__ . '/../../config/api-resource.xsd')) {
-            throw new InvalidXmlException('resources.xml is not a valid XML document.');
+            throw new InvalidXmlException($metadata_file . ' is not a valid XML document.');
         }
 
         $this->xpath = new \DOMXPath($this->metadata);

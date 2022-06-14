@@ -35,6 +35,7 @@ class RootDenormalizer {
 
             if(isset($field['denormalizer'])) {
                 $value = $this->denormalizers[$field['denormalizer']]->denormalizeItem(
+                    $field,
                     $value, 
                     $entity_metadata
                 );

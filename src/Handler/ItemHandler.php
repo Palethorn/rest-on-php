@@ -85,7 +85,7 @@ class ItemHandler {
         $result = $this->$method($resource_name, $id, $default_autofilters, $default_autofillers);
 
         if($result instanceof Response) {
-            return $result;
+            return new HandlerResponse(HandlerResponse::CARDINALITY_NONE, $result, null);
         }
 
         return new HandlerResponse(HandlerResponse::CARDINALITY_SINGLE, $result, null);
