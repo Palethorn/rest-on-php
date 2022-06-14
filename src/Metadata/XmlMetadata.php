@@ -4,6 +4,7 @@ namespace RestOnPhp\Metadata;
 use Exception;
 use RuntimeException;
 use Symfony\Component\Config\Util\Exception\InvalidXmlException;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
 class XmlMetadata {
@@ -11,6 +12,7 @@ class XmlMetadata {
     private $xpath;
 
     public function __construct(string $metadata_file, string $cache_dir = null) {
+        
         if(!file_exists($cache_dir . '/resources.xml.php')) {
             $this->metadata = $this->load($metadata_file);
 
@@ -22,7 +24,7 @@ class XmlMetadata {
         }
     }
 
-    private function load($metadata_file) {
+    private function loadResource($metadata_file) {
         $this->metadata = new \DOMDocument();
         $this->metadata->preserveWhiteSpace = false;
         $this->metadata->load($metadata_file);
@@ -45,7 +47,6 @@ class XmlMetadata {
             $roles = $resource->getAttribute('roles');
             $roles = $roles ? explode('|', $roles) : [];
             $secure = $secure == 'true' ? true : false;
-            $handler = $resource->getAttribute('handler');
             $normalizer = $resource->getAttribute('normalizer') ? $resource->getAttribute('normalizer') : null;
             $denormalizer = $resource->getAttribute('denormalizer') ? $resource->getAttribute('denormalizer') : null;
             $routes = [];
@@ -55,13 +56,17 @@ class XmlMetadata {
 
             foreach($resource->getElementsByTagName('route') as $route_element) {
                 $route_name = $route_element->getAttribute('name');
+                $route_http_method = $route_element->getAttribute('http_method');
+                $route_handler = $route_element->getAttribute('handler');
                 $route_method = $route_element->getAttribute('method');
                 $route_path = $route_element->getAttribute('path');
 
                 $routes[$route_name] = [
                     'name' => $route_name,
+                    'http_method' => $route_http_method,
+                    'handler' => $route_handler,
                     'method' => $route_method,
-                    'path' => $route_path
+                    'path' => $route_path,
                 ];
             }
 
@@ -98,7 +103,6 @@ class XmlMetadata {
                 'id' => $id,
                 'secure' => $secure,
                 'roles' => $roles,
-                'handler' => $handler,
                 'normalizer' => $normalizer,
                 'denormalizer' => $denormalizer,
                 'routes' => $routes,
@@ -106,6 +110,27 @@ class XmlMetadata {
                 'autofilters' => $autofilters,
                 'autofillers' => $autofillers
             ];
+        }
+
+        return $parsed;
+    }
+
+    private function load($metadata_file) {
+        $parsed = [];
+
+        if(is_dir($metadata_file)) {
+            $finder = new Finder();
+
+            $finder->in($metadata_file)
+                ->name('*.xml')
+                ->files();
+
+            foreach($finder as $resource_file) {
+                $p = $this->loadResource($resource_file->getRealPath());
+                $parsed = array_merge($parsed, $p);
+            }
+        } else {
+            $parsed = $this->loadResource($metadata_file);
         }
 
         return $parsed;
@@ -187,6 +212,26 @@ class XmlMetadata {
     public function getRouteMetadataFor($name, $route_name) {
         $resource = $this->getMetadataFor($name);
         return $resource['routes'][$route_name];
+    }
+
+
+    public function getRouteMetadata() {
+        $routes = [];
+
+        foreach($this->metadata as $resource) {
+            foreach($resource['routes'] as $route) {
+                $routes[] = [
+                    'resource' => $resource['name'],
+                    'name' => $resource['name'] . '_' . $route['name'],
+                    'path' => $route['path'],
+                    'method' => $route['method'],
+                    'http_method' => $route['http_method'],
+                    'handler' => isset($route['handler']) ? $route['handler'] : null,
+                ];
+            }
+        }
+
+        return $routes;
     }
 
     public function getIdFieldNameFor($name) {

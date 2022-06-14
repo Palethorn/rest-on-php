@@ -38,11 +38,11 @@ class RootNormalizer {
                 $value = $value->format('Y-m-d H:i:s');
             } else if(isset($field['normalizer']) && in_array($field['type'], ['boolean', 'string'])) {
                 $normalizer = $this->normalizers[$field['normalizer']];
-                $value = $normalizer->normalizeItem($value, [], $data);
+                $value = $normalizer->normalizeItem($field, $value, [], $data);
             } else if(isset($field['normalizer'])) {
                 $entity = $field['type'];
                 $normalizer = $this->normalizers[$field['normalizer']];
-                $value = $normalizer->normalizeItem($value, $this->xmlMetadata->getMetadataForEntity($entity), $data);
+                $value = $normalizer->normalizeItem($field, $value, $this->xmlMetadata->getMetadataForEntity($entity), $data);
             } else if(is_object($value)) {
                 $entity = $field['type'];
                 $value = $this->normalizeItem($value, $this->xmlMetadata->getMetadataForEntity($entity), $data);

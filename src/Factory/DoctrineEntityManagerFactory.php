@@ -41,7 +41,8 @@ class DoctrineEntityManagerFactory {
             mkdir($cache_dir . '/doctrine_metadata', 0777, true);
         }
         
-        $config->setMetadataCacheImpl(new FilesystemCache($cache_dir . '/doctrine_metadata'));
+        $metadataCache = new FilesystemAdapter('', 0, $cache_dir . '/doctrine_metadata');
+        $config->setMetadataCache($metadataCache);
 
         // database configuration parameters
         $conn = [

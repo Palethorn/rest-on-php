@@ -8,6 +8,9 @@ interface HandlerResponseInterface {
 
     function __construct(int $cardinality, $data, $pagination = null);
     function getCardinality();
+    /**
+     * @return Response
+     */
     function getData();
     function getPagination();
 }

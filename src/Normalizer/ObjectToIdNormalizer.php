@@ -2,7 +2,7 @@
 namespace RestOnPhp\Normalizer;
 
 class ObjectToIdNormalizer {
-    public function normalizeItem($data, $resource_metadata) {
+    public function normalizeItem($field, $data, $resource_metadata) {
         if(!$data) {
             return null;
         }

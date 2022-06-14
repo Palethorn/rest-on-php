@@ -16,11 +16,11 @@ class IdToObjectDenormalizer {
         $this->xmlMetadata = $xmlMetadata;
     }
 
-    public function denormalizeItem($id, $resource_metadata) {
+    public function denormalizeItem($field, $value, $resource_metadata) {
         $id_field = $resource_metadata['id'];
         
         return $this->entityManager->getRepository($resource_metadata['entity'])->findOneBy([
-            $id_field => $id
+            $id_field => $value
         ]);
     }
 }

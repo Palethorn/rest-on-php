@@ -1,32 +1,37 @@
 <?php
 namespace RestOnPhp;
 
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use RestOnPhp\DependencyInjection\Compiler\EventPass;
-use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
-use RestOnPhp\Event\PostNormalizeEvent;
-use RestOnPhp\Event\PostSerializeEvent;
+use Exception;
+use RestOnPhp\Metadata\XmlMetadata;
 use RestOnPhp\Event\PreNormalizeEvent;
 use RestOnPhp\Event\PreSerializeEvent;
-use RestOnPhp\Handler\Response\HandlerResponseInterface;
+use RestOnPhp\Event\PostNormalizeEvent;
+use RestOnPhp\Event\PostSerializeEvent;
 use RestOnPhp\Normalizer\RootNormalizer;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
-use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use RestOnPhp\DependencyInjection\Compiler\EventPass;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\Routing\Exception\MethodNotAllowedException;
-use Symfony\Component\Routing\Exception\NoConfigurationException;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Loader\XmlFileLoader as RoutingXmlFileLoader;
+use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
+use RestOnPhp\Handler\Response\HandlerResponseInterface;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
-use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
-use Symfony\Component\Routing\RequestContext;
-use Symfony\Component\Serializer\Exception\NotEncodableValueException;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\Validator\Exception\ValidatorException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\Routing\Exception\NoConfigurationException;
+use Symfony\Component\Routing\Exception\MethodNotAllowedException;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Serializer\Exception\NotEncodableValueException;
+use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
+use Symfony\Component\Routing\Loader\XmlFileLoader as RoutingXmlFileLoader;
+use Symfony\Component\Routing\Matcher\UrlMatcher;
+use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouteCollection;
 
 class Kernel implements HttpKernelInterface {
     /**
@@ -79,8 +84,8 @@ class Kernel implements HttpKernelInterface {
         $this->debug = $debug;
 
         $this->checkDirs();
-        $this->loadRoutes();
         $this->loadDependencyContainer();
+        $this->loadRoutes();
 
         $this->eventDispatcher = $this->dependencyContainer->get('api.event.dispatcher');
         $this->logger = $this->dependencyContainer->get('api.logger');
@@ -101,6 +106,7 @@ class Kernel implements HttpKernelInterface {
         $project_dir = $this->getProjectDir();
         $cache_dir = $this->getCacheDir();
         $log_dir = $this->getLogDir();
+        ini_set('error_log', $log_dir . '/php_error.log');
         $config_dir = $this->getConfigDir();
         $public_dir = $this->getPublicDir();
 
@@ -135,12 +141,24 @@ class Kernel implements HttpKernelInterface {
 
     private function loadRoutes() {
         $cache_dir = $this->getCacheDir();
-        $config_dir = $this->getConfigDir();
 
         if(!file_exists($cache_dir . '/routes.php')) {
-            $route_loader = new RoutingXmlFileLoader(new FileLocator($config_dir));
-            $this->routes = $route_loader->load('routing.xml');
-            $this->routes = (new CompiledUrlMatcherDumper($this->routes))->getCompiledRoutes();
+            /**
+             * @var XmlMetadata
+             */
+            $metadata = $this->dependencyContainer->get('api.metadata.xml');
+            $routes = $metadata->getRouteMetadata();
+
+            $routeCollection = new RouteCollection();
+
+            foreach($routes as $route) {
+                $routeCollection->add($route['name'], new Route($route['path'], [
+                    'resource' => $route['resource'],
+                    'handler' => $route['handler']
+                ], [], [], '', [], [$route['http_method']], ''));
+            }
+
+            $this->routes = (new CompiledUrlMatcherDumper($routeCollection))->getCompiledRoutes();
             file_put_contents($cache_dir . '/routes.php', sprintf("<?php\nreturn %s;\n", var_export($this->routes, true)));
         } else {
             $this->routes = require_once $cache_dir . '/routes.php';
@@ -186,15 +204,10 @@ class Kernel implements HttpKernelInterface {
         $matcher = new CompiledUrlMatcher($this->routes, $this->context);
         $attributes = $matcher->match($this->request->getPathInfo());
         $parameters = [];
-
         $entityClass = null;
-        $handler_id = $attributes['handler'];
+        $handler_id = isset($attributes['handler']) ? $attributes['handler'] : '';
         $resource_metadata = $this->metadata->getMetadataFor($attributes['resource']);
         $entityClass = $resource_metadata['entity'];
-
-        if($resource_metadata['handler']) {
-            $handler_id = $resource_metadata['handler'];
-        }
 
         if(!class_exists($entityClass)) {
             $this->logger->error('HANDLER_LOAD_FAIL', [
@@ -205,11 +218,16 @@ class Kernel implements HttpKernelInterface {
             throw new ResourceNotFoundException(sprintf('%s resource class does not exist!', $entityClass));
         }
 
-        $handler = $this->dependencyContainer->get($handler_id);
+        try {
+            $handler = $this->dependencyContainer->get($handler_id);
+        } catch(Exception $e) {
+            throw new NoConfigurationException(sprintf('Resource has not handler assigned %s', $attributes['resource']));
+        }
+
         $reflectionClass = new \ReflectionClass($handler);
         $reflectionMethod = $reflectionClass->getMethod('handle');
         $parameters[] = $attributes['resource'];
-
+        
         foreach($reflectionMethod->getParameters() as $parameter) {
             if(isset($attributes[$parameter->name])) {
                 $parameters[] = $attributes[$parameter->name];
@@ -231,7 +249,14 @@ class Kernel implements HttpKernelInterface {
         $authorization->authorize($resource_name);
     }
 
-    public function handle(Request $request, int $type = self::MASTER_REQUEST, bool $catch = true) {
+    /**
+     * @param Request $request
+     * @param int $type  The type of the request (one of HttpKernelInterface::MAIN_REQUEST or HttpKernelInterface::SUB_REQUEST)
+     * @param bool $catch Whether to catch exceptions or not
+     * @return Response
+     * @throws \Exception When an Exception occurs during processing
+     */
+    public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true) {
         if(Request::METHOD_OPTIONS == $request->getMethod()) {
             return new Response('', 200);
         }
@@ -342,6 +367,6 @@ class Kernel implements HttpKernelInterface {
     }
 
     public function getProjectDir() {
-        return __DIR__ . '/../../../..';
+        return __DIR__ . '/../../..';
     }
 }

@@ -39,7 +39,7 @@
         <service id="api.request.stack" class="Symfony\Component\HttpFoundation\RequestStack" public="true" />
 
         <service id="api.metadata.xml" class="RestOnPhp\Metadata\XmlMetadata" public="true">
-            <argument>%config_dir%/resources.xml</argument>
+            <argument>%config_dir%/resources</argument>
             <argument>%cache_dir%</argument>
         </service>
 

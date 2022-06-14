@@ -23,7 +23,6 @@
         <xs:attribute name="id"></xs:attribute>
         <xs:attribute name="secure" type="xs:boolean" default="false"></xs:attribute>
         <xs:attribute name="roles"></xs:attribute>
-        <xs:attribute name="handler"></xs:attribute>
         <xs:attribute name="normalizer"></xs:attribute>
         <xs:attribute name="denormalizer"></xs:attribute>
     </xs:complexType>
@@ -46,11 +45,13 @@
 
     <xs:complexType name="route">
         <xs:attribute name="name"></xs:attribute>
-        <xs:attribute name="method" type="api:method"></xs:attribute>
+        <xs:attribute name="handler"></xs:attribute>
+        <xs:attribute name="method"></xs:attribute>
+        <xs:attribute name="http_method" type="api:http_method"></xs:attribute>
         <xs:attribute name="path"></xs:attribute>
     </xs:complexType>
 
-    <xs:simpleType name="method">
+    <xs:simpleType name="http_method">
         <xs:restriction base="xs:token">
             <xs:enumeration value="GET"></xs:enumeration>
             <xs:enumeration value="POST"></xs:enumeration>
