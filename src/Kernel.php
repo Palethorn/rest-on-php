@@ -22,6 +22,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\Validator\Exception\ValidatorException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
@@ -154,7 +155,8 @@ class Kernel implements HttpKernelInterface {
             foreach($routes as $route) {
                 $routeCollection->add($route['name'], new Route($route['path'], [
                     'resource' => $route['resource'],
-                    'handler' => $route['handler']
+                    'handler' => $route['handler'],
+                    'method' => $route['method']
                 ], [], [], '', [], [$route['http_method']], ''));
             }
 
@@ -220,12 +222,18 @@ class Kernel implements HttpKernelInterface {
 
         try {
             $handler = $this->dependencyContainer->get($handler_id);
-        } catch(Exception $e) {
-            throw new NoConfigurationException(sprintf('Resource has not handler assigned %s', $attributes['resource']));
+        } catch(ServiceNotFoundException $e) {
+            throw new NoConfigurationException(sprintf('Resource %s has no handler assigned', $attributes['resource']));
         }
 
+        $method = 'handle';
+
+        if(isset($attributes['method'])) {
+            $method = $attributes['method'];
+        }
+    
         $reflectionClass = new \ReflectionClass($handler);
-        $reflectionMethod = $reflectionClass->getMethod('handle');
+        $reflectionMethod = $reflectionClass->getMethod($method);
         $parameters[] = $attributes['resource'];
         
         foreach($reflectionMethod->getParameters() as $parameter) {
