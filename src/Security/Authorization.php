@@ -1,22 +1,22 @@
 <?php
 namespace RestOnPhp\Security;
 
-use RestOnPhp\Handler\AuthHandler;
-use RestOnPhp\Metadata\XmlMetadata;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use RestOnPhp\Security\SecureUser;
-use RestOnPhp\Session\JwtSessionStorage;
-use RestOnPhp\Token\Extractor;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Monolog\Logger;
+use RestOnPhp\Handler\AuthHandler;
+use RestOnPhp\Security\SecureUser;
+use RestOnPhp\Metadata\XmlMetadata;
+use RestOnPhp\Session\JwtSessionStorage;
+use RestOnPhp\Token\TokenExtractorInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class Authorization {
     private $metadata, $tokenExtractor, $authHandler, $sessionStorage, $logger, $request;
 
     public function __construct(
         XmlMetadata $metadata, 
-        Extractor $tokenExtractor, 
+        TokenExtractorInterface $tokenExtractor, 
         AuthHandler $authHandler,
         JwtSessionStorage $sessionStorage,
         RequestStack $requestStack,

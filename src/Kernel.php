@@ -22,7 +22,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Dumper\PhpDumper;
 use Symfony\Component\Validator\Exception\ValidatorException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
@@ -157,7 +156,7 @@ class Kernel implements HttpKernelInterface {
                     'resource' => $route['resource'],
                     'handler' => $route['handler'],
                     'method' => $route['method']
-                ], [], [], '', [], [$route['http_method']], ''));
+                ], [], [], '', [], [ $route['http_method'] ], ''));
             }
 
             $this->routes = (new CompiledUrlMatcherDumper($routeCollection))->getCompiledRoutes();
@@ -175,7 +174,7 @@ class Kernel implements HttpKernelInterface {
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
 
         if($resource_metadata['normalizer']) {
-            $normalizer = $this->dependencyContainer->get($resource_metadata['normalizer']);    
+            $normalizer = $this->dependencyContainer->get($resource_metadata['normalizer']);
         } else {
             /**
              * @var RootNormalizer
@@ -222,16 +221,17 @@ class Kernel implements HttpKernelInterface {
 
         try {
             $handler = $this->dependencyContainer->get($handler_id);
-        } catch(ServiceNotFoundException $e) {
-            throw new NoConfigurationException(sprintf('Resource %s has no handler assigned', $attributes['resource']));
+        } catch(Exception $e) {
+            throw new NoConfigurationException(sprintf('Resource has not handler assigned %s', $attributes['resource']));
         }
 
         $method = 'handle';
-
+        
         if(isset($attributes['method'])) {
             $method = $attributes['method'];
         }
-    
+        
+
         $reflectionClass = new \ReflectionClass($handler);
         $reflectionMethod = $reflectionClass->getMethod($method);
         $parameters[] = $attributes['resource'];

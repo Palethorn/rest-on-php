@@ -196,7 +196,7 @@ class XmlMetadata {
 
     public function getFieldMetadataFor($name, $field_name) {
         $resource = $this->getMetadataFor($name);
-        return $resource['fields'][$field_name];
+        return isset($resource['fields'][$field_name]) ? $resource['fields'][$field_name] : null;
     }
 
     public function getFieldMetadataForEntity($entity_class, $field_name) {
@@ -206,7 +206,7 @@ class XmlMetadata {
             throw new RuntimeException(sprintf('Field metadata for %s does not exist.', $field_name));
         }
 
-        return $resource['fields'][$field_name];
+        return isset($resource['fields'][$field_name]) ? $resource['fields'][$field_name] : null;
     }
 
     public function getRouteMetadataFor($name, $route_name) {

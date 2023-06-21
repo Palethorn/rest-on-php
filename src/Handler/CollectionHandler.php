@@ -57,17 +57,24 @@ class CollectionHandler {
             }
 
             $field_metadata = $this->metadata->getFieldMetadataFor($resource_name, $field);
+            
+            if(null === $field_metadata) {
+                continue;
+            }
+
             $filter_type = isset($field_metadata['filter-type']) ? $field_metadata['filter-type'] : 'exact';
             $filters[$filter_type][$field] = $filter;
         }
 
         $pagination_parameters = $this->request->query->get('pagination');
         
-        if($pagination_parameters == null) {
+        if(null == $pagination_parameters) {
             $pagination_parameters = [
                 'page' => 1,
                 'per_page' => 10
             ];
+        } else if('0' == $pagination_parameters || 'false' == $pagination_parameters) {
+            $pagination_parameters = false;
         } else {
             if(!isset($pagination_parameters['page'])) {
                 $pagination_parameters['page'] = 1;
@@ -76,10 +83,6 @@ class CollectionHandler {
             if(!isset($pagination_parameters['per_page'])) {
                 $pagination_parameters['per_page'] = 10;
             }
-        }
-
-        if($pagination_parameters == '0' || $pagination_parameters == 'false') {
-            $pagination_parameters = false;
         }
 
         $order = $this->request->query->get('order') ? $this->request->query->get('order') : [
