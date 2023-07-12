@@ -13,8 +13,8 @@
 
     <xs:complexType name="resource" >
         <xs:choice minOccurs="0" maxOccurs="unbounded">
-            <xs:element name="autofilter" type="api:autofilter" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element name="autofiller" type="api:autofiller" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="filter" type="api:filter" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="filler" type="api:filler" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="field" type="api:field" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="route" type="api:route" minOccurs="0" maxOccurs="unbounded"/>
         </xs:choice>
@@ -27,12 +27,12 @@
         <xs:attribute name="denormalizer"></xs:attribute>
     </xs:complexType>
 
-    <xs:complexType name="autofilter">
-        <xs:attribute name="class"></xs:attribute>
+    <xs:complexType name="filter">
+        <xs:attribute name="id"></xs:attribute>
     </xs:complexType>
 
-    <xs:complexType name="autofiller">
-        <xs:attribute name="class"></xs:attribute>
+    <xs:complexType name="filler">
+        <xs:attribute name="id"></xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="field">

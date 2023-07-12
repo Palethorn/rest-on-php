@@ -4,17 +4,14 @@ namespace RestOnPhp\Handler;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
 use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
-use Lcobucci\JWT\Validation\Validator;
 use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Metadata\XmlMetadata;
 use RestOnPhp\Normalizer\RootNormalizer;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class AuthHandler {
+class AuthHandler implements HandlerInterface {
     private $signer;
     private $entity;
     private $request;
@@ -104,5 +101,13 @@ class AuthHandler {
         }
 
         return $user;
+    }
+
+    public function setFilters($filters) {
+
+    }
+
+    public function setFillers($filters) {
+        
     }
 }

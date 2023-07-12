@@ -178,7 +178,7 @@ Directory for all additional service definitions. Example definition files:
 - config/services/handlers.xml
 - config/services/commands.xml
 - config/services/filters.xml
-- config/services/autofillers.xml
+- config/services/fillers.xml
 - config/services/normalizers.xml
 
 ### config/doctrine_mapping
@@ -379,16 +379,16 @@ To create a resource definition manually, edit config/resources.xml under mappin
 
 Resource is now available on http://app.example.com/index.php/videos. Resource definition should also be visible here http://app.example.com/index.php/docs.json
 
-## Autofilters
+## Filters
 Let's say that we only want to list published videos.
 Implement a class
 
 ```php
-// src/Autofilters/PublishedFilter.php
-namespace App\Autofilters;
+// src/Filters/PublishedFilter.php
+namespace App\Filters;
 use Doctrine\ORM\QueryBuilder;
 
-class PublishedAutofilter {
+class PublishedFilter {
     public function filter(QueryBuilder $queryBuilder) {
         $queryBuilder->andWhere('r.published = :published');
         $queryBuilder->setParameter('published', 1);
@@ -408,13 +408,12 @@ Register service:
         https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
     <services>
-        <service id="App\Autofilter\PublishedAutofilter" class="App\Autofilter\PublishedAutofilter"><tag>api.autofilters.default</tag></service>
+        <service id="app.filter.published" class="App\Filter\PublishedFilter"></service>
     </services>
 </container>
 ```
 
-Tag ```api.autofilters.default``` is required.
-Specify autofilters on the resource definition:
+Specify filters on the resource definition:
 
 ```xml
     <resource 
@@ -423,17 +422,17 @@ Specify autofilters on the resource definition:
         name="videos" 
         entity="App\Entity\Video">
     ...
-    <autofilter class="App\Autofilter\PublishedFilter" />
+    <filter id="app.filter.published_filter" />
 ```
 
-## Autofillers
-Autofillers set property values based on a custom logic before changes to database are applied. Example, updatedAt. Create a class:
+## Filler
+Filler set property values based on a custom logic before changes to database are applied. Example, updatedAt. Create a class:
 
 ```php
-// src/Autofiller/UpdatedAtAutofiller
-namespace App\Autofiller;
+// src/Filler/UpdatedAtFiller
+namespace App\Filler;
 
-class UpdatedAtAutofiller {
+class UpdatedAtFiller {
     public function fill($object) {
         $object->setUpdatedAt(new \DateTime());
     }
@@ -451,15 +450,13 @@ Register service:
         https://symfony.com/schema/dic/symfony/symfony-1.0.xsd">
 
     <services>
-        <service id="App\Autofiller\UpdatedAtAutofiller" class="App\Autofiller\UpdatedAtAutofiller">
-            <tag>api.autofillers.default</tag>
+        <service id="app.filler.updated_at" class="App\Filler\UpdatedAtFiller">
         </service>
     </services>
 </container>
 ```
 
-Tag ```api.autofillers.default``` is required.
-Configure resource to use custom autofiller:
+Configure resource to use custom filler:
 
 ```xml
     <resource 
@@ -468,7 +465,7 @@ Configure resource to use custom autofiller:
         name="videos" 
         entity="App\Entity\Video">
     ...
-    <autofiller class="App\Autofiller\UpdatedAtAutofiller" />
+    <filler id="app.filler.updated_at" />
 ```
 
 ## Custom Handlers

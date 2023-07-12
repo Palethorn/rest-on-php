@@ -16,11 +16,11 @@ use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Validator\Exception\ValidatorException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class ItemHandler {
+class ItemHandler implements HandlerInterface {
     private $dispatcher;
     private $request;
-    private $autofilters;
-    private $autofillers;
+    private $filters;
+    private $fillers;
     private $metadata;
     private $validator;
     private $repository;
@@ -33,26 +33,16 @@ class ItemHandler {
         ValidatorInterface $validator, 
         XmlMetadata $metadata,
         RequestStack $requestStack,
-        RootDenormalizer $denormalizer, 
-        $default_autofilters = [], 
-        $autofillers = []
+        RootDenormalizer $denormalizer
     ) {
-        $this->autofilters = [];
-        $this->autofillers = [];
+        $this->filters = [];
+        $this->fillers = [];
         $this->metadata = $metadata;
         $this->validator = $validator;
         $this->dispatcher = $dispatcher;
         $this->entityManager = $entityManager;
         $this->request = $requestStack->getCurrentRequest();
         $this->denormalizer = $denormalizer;
-
-        foreach($default_autofilters as $filter) {
-            $this->autofilters[get_class($filter)] = $filter;
-        }
-
-        foreach($autofillers as $autofiller) {
-            $this->autofillers[get_class($autofiller)] = $autofiller;
-        }
     }
 
     public function handle($resource_name, $id = null) {
@@ -67,22 +57,7 @@ class ItemHandler {
         $method = $this->request->getMethod();
         $method = strtolower($method);
         $this->repository = $this->entityManager->getRepository($entityClass);
-
-        $filterMetadata = $this->metadata->getAutofilterMetadataFor($resource_name);
-        $default_autofilters = [];
-
-        foreach ($filterMetadata as $filterClass) {
-            $default_autofilters[] = $this->autofilters[$filterClass];
-        }
-
-        $autofillerMetadata = $this->metadata->getAutofillerMetadataFor($resource_name);
-        $default_autofillers = [];
-
-        foreach ($autofillerMetadata as $autofillerClass) {
-            $default_autofillers[] = $this->autofillers[$autofillerClass];
-        }
-
-        $result = $this->$method($resource_name, $id, $default_autofilters, $default_autofillers);
+        $result = $this->$method($resource_name, $id);
 
         if($result instanceof Response) {
             return new HandlerResponse(HandlerResponse::CARDINALITY_NONE, $result, null);
@@ -91,7 +66,7 @@ class ItemHandler {
         return new HandlerResponse(HandlerResponse::CARDINALITY_SINGLE, $result, null);
     }
 
-    public function get($resource_name, $id, $default_autofilters) {
+    public function get($resource_name, $id) {
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -100,7 +75,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_autofilters
+            'default' => $this->filters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -113,7 +88,7 @@ class ItemHandler {
         return $data;
     }
 
-    public function post($resource_name, $id, $autofilters, $autofillers) {
+    public function post($resource_name, $id) {
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
         $this->dispatcher->dispatch(new PreDeserializeEvent($resource_name, $this->request->getContent()), PreDeserializeEvent::NAME);
         $data = json_decode($this->request->getContent(), true);
@@ -131,8 +106,8 @@ class ItemHandler {
             throw new ValidatorException($message);
         }
 
-        foreach($autofillers as $autofiller) {
-            $autofiller->fill($object);
+        foreach($this->fillers as $filler) {
+            $filler->fill($object);
         }
 
         $this->entityManager->persist($object);
@@ -141,7 +116,7 @@ class ItemHandler {
         return $object;
     }
 
-    public function put($resource_name, $id, $default_autofilters, $autofillers = []) {
+    public function put($resource_name, $id) {
         $resource_metadata = $this->metadata->getMetadataFor($resource_name);
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $object = $this->repository->get([ 
@@ -151,7 +126,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_autofilters
+            'default' => $this->filters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -177,8 +152,8 @@ class ItemHandler {
             throw new ValidatorException($message);
         }
 
-        foreach($autofillers as $autofiller) {
-            $autofiller->fill($object);
+        foreach($this->fillers as $filler) {
+            $filler->fill($object);
         }
 
         $this->entityManager->persist($object);
@@ -187,7 +162,7 @@ class ItemHandler {
         return $object;
     }
 
-    public function delete($resource_name, $id, $default_autofilters) {
+    public function delete($resource_name, $id) {
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
         $data = $this->repository->get([ 
             'partial' => [], 
@@ -196,7 +171,7 @@ class ItemHandler {
             'gte' => [],
             'lt' => [],
             'gt' => [],
-            'default' => $default_autofilters
+            'default' => $this->filters
         ], [
             'page' => 1,
             'per_page' => 1
@@ -214,7 +189,15 @@ class ItemHandler {
         return new Response('', 204, []);
     }
 
-    public function patch($resource_name, $id, $default_autofilters, $autofillers) {
-        return $this->put($resource_name, $id, $default_autofilters, $autofillers);
+    public function patch($resource_name, $id) {
+        return $this->put($resource_name, $id);
+    }
+
+    public function setFilters($filters) {
+        $this->filters = $filters;
+    }
+
+    public function setFillers($fillers) {
+        $this->fillers = $fillers;
     }
 }

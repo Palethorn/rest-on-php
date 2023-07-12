@@ -51,8 +51,8 @@ class XmlMetadata {
             $denormalizer = $resource->getAttribute('denormalizer') ? $resource->getAttribute('denormalizer') : null;
             $routes = [];
             $fields = [];
-            $autofilters = [];
-            $autofillers = [];
+            $filters = [];
+            $fillers = [];
 
             foreach($resource->getElementsByTagName('route') as $route_element) {
                 $route_name = $route_element->getAttribute('name');
@@ -89,12 +89,12 @@ class XmlMetadata {
                 ];
             }
 
-            foreach($resource->getElementsByTagName('autofilter') as $field_element) {
-                $autofilters[] = $field_element->getAttribute('class');
+            foreach($resource->getElementsByTagName('filter') as $field_element) {
+                $filters[] = $field_element->getAttribute('id');
             }
 
-            foreach($resource->getElementsByTagName('autofiller') as $field_element) {
-                $autofillers[] = $field_element->getAttribute('class');
+            foreach($resource->getElementsByTagName('filler') as $field_element) {
+                $fillers[] = $field_element->getAttribute('id');
             }
 
             $parsed[$name] = [
@@ -107,8 +107,8 @@ class XmlMetadata {
                 'denormalizer' => $denormalizer,
                 'routes' => $routes,
                 'fields' => $fields,
-                'autofilters' => $autofilters,
-                'autofillers' => $autofillers
+                'filters' => $filters,
+                'fillers' => $fillers
             ];
         }
 
@@ -214,7 +214,6 @@ class XmlMetadata {
         return $resource['routes'][$route_name];
     }
 
-
     public function getRouteMetadata() {
         $routes = [];
 
@@ -244,13 +243,13 @@ class XmlMetadata {
         return $resource['id'];
     }
 
-    public function getAutofilterMetadataFor($name) {
+    public function getFilterMetadataFor($name) {
         $resource = $this->getMetadataFor($name);
-        return $resource['autofilters'];
+        return $resource['filters'];
     }
 
-    public function getAutofillerMetadataFor($name) {
+    public function getFillerMetadataFor($name) {
         $resource = $this->getMetadataFor($name);
-        return $resource['autofillers'];
+        return $resource['fillers'];
     }
 }

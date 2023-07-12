@@ -2,7 +2,10 @@
 namespace RestOnPhp;
 
 use Exception;
+use ReflectionClass;
+use RuntimeException;
 use RestOnPhp\Metadata\XmlMetadata;
+use Symfony\Component\Routing\Route;
 use RestOnPhp\Event\PreNormalizeEvent;
 use RestOnPhp\Event\PreSerializeEvent;
 use RestOnPhp\Event\PostNormalizeEvent;
@@ -12,6 +15,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\RouteCollection;
 use RestOnPhp\DependencyInjection\Compiler\EventPass;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use RestOnPhp\DependencyInjection\Compiler\LoggerPass;
@@ -26,12 +30,7 @@ use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Serializer\Exception\NotEncodableValueException;
 use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
-use Symfony\Component\Routing\Loader\XmlFileLoader as RoutingXmlFileLoader;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
 
 class Kernel implements HttpKernelInterface {
     /**
@@ -222,7 +221,7 @@ class Kernel implements HttpKernelInterface {
         try {
             $handler = $this->dependencyContainer->get($handler_id);
         } catch(Exception $e) {
-            throw new NoConfigurationException(sprintf('Resource has not handler assigned %s', $attributes['resource']));
+            throw new NoConfigurationException(sprintf('Resource "%s" has no handler assigned', $attributes['resource']));
         }
 
         $method = 'handle';
@@ -230,12 +229,34 @@ class Kernel implements HttpKernelInterface {
         if(isset($attributes['method'])) {
             $method = $attributes['method'];
         }
-        
 
         $reflectionClass = new \ReflectionClass($handler);
+
+        if(!$reflectionClass->implementsInterface(new ReflectionClass('RestOnPhp\Handler\HandlerInterface'))) {
+            throw new RuntimeException(sprintf('Handler %s must implement RestOnPhp\Handler\HandlerInterface', $reflectionClass->getName()));
+        }
+
+        $filter_ids = $this->metadata->getFilterMetadataFor($attributes['resource']);
+        $filters = [];
+
+        foreach($filter_ids as $filter_id) {
+            $filters[] = $this->dependencyContainer->get($filter_id);
+        }
+
+        $handler->setFilters($filters);
+
+        $filler_ids = $this->metadata->getFillerMetadataFor($attributes['resource']);
+        $fillers = [];
+
+        foreach($filler_ids as $filler_id) {
+            $fillers[] = $this->dependencyContainer->get($filler_id);
+        }
+
+        $handler->setFillers($fillers);
+
         $reflectionMethod = $reflectionClass->getMethod($method);
         $parameters[] = $attributes['resource'];
-        
+
         foreach($reflectionMethod->getParameters() as $parameter) {
             if(isset($attributes[$parameter->name])) {
                 $parameters[] = $attributes[$parameter->name];
@@ -338,11 +359,6 @@ class Kernel implements HttpKernelInterface {
                 'message' => 'HTTP exception',
                 'exception_message' => $e->getMessage()
             ]), $e->getStatusCode(), ['Content-Type' => 'application/json']);
-        } catch(NotEncodableValueException $e) {
-            $response = new Response(json_encode([
-                'message' => 'Not encodable',
-                'exception_message' => $e->getMessage()
-            ]), 400, ['Content-Type' => 'application/json']);
         }
 
         $this->logger->info('RESPONSE', [

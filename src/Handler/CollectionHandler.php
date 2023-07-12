@@ -5,24 +5,25 @@ use RestOnPhp\Metadata\XmlMetadata;
 use Doctrine\ORM\EntityManager;
 use RestOnPhp\Handler\Response\HandlerResponse;
 use RestOnPhp\Repository\DefaultRepository;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-class CollectionHandler {
-    private $autofilters;
+class CollectionHandler implements HandlerInterface {
+    private $filters;
     private $request;
     private $metadata;
     private $entityManager;
     private $requestStack;
 
-    public function __construct(EntityManager $entityManager, XmlMetadata $metadata, RequestStack $requestStack, $default_autofilters = []) {
+    public function __construct(
+        EntityManager $entityManager, 
+        XmlMetadata $metadata, 
+        RequestStack $requestStack
+    ) {
+        
         $this->entityManager = $entityManager;
         $this->metadata = $metadata;
-        $this->autofilters = [];
-
-        foreach($default_autofilters as $autofilter) {
-            $this->autofilters[get_class($autofilter)] = $autofilter;
-        }
-
+        $this->filters = [];
         $this->requestStack = $requestStack;
     }
 
@@ -31,12 +32,6 @@ class CollectionHandler {
 
         $metadata = $this->metadata->getMetadataFor($resource_name);
         $id_field = $this->metadata->getIdFieldNameFor($resource_name);
-        $filterMetadata = $this->metadata->getAutofilterMetadataFor($resource_name);
-        $default_autofilters = [];
-
-        foreach ($filterMetadata as $filterClass) {
-            $default_autofilters[] = $this->autofilters[$filterClass];
-        }
 
         $f = $this->request->query->get('filter') ? $this->request->query->get('filter') : [];
 
@@ -47,7 +42,7 @@ class CollectionHandler {
             'gt' => [],
             'lte' => [],
             'gte' => [],
-            'default' => $default_autofilters
+            'default' => $this->filters
         ];
 
         foreach($f as $field => $filter) {
@@ -141,5 +136,12 @@ class CollectionHandler {
         $pagination['total_pages'] = $total_pages;
         $pagination['total_items'] = $total_items;
         return $pagination;
+    }
+
+    public function setFilters($filters) {
+        $this->filters = $filters;
+    }
+
+    public function setFillers($fillers) {
     }
 }
