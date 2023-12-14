@@ -391,6 +391,6 @@ class Kernel implements HttpKernelInterface {
     }
 
     public function getProjectDir() {
-        return __DIR__ . '/../../..';
+        return __DIR__ . '/../../../..';
     }
 }
