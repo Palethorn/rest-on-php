@@ -200,7 +200,7 @@ class Kernel implements HttpKernelInterface {
 
     private function getHandler() {
         $this->logger->info('HANDLER_LOAD');
-
+        
         $matcher = new CompiledUrlMatcher($this->routes, $this->context);
         $attributes = $matcher->match($this->request->getPathInfo());
         $parameters = [];
@@ -265,7 +265,6 @@ class Kernel implements HttpKernelInterface {
 
         $parameters[] = $entityClass;
         $parameters[] = $resource_metadata;
-
         return [ $handler, $reflectionMethod, $parameters];
     }
 
@@ -391,6 +390,6 @@ class Kernel implements HttpKernelInterface {
     }
 
     public function getProjectDir() {
-        return __DIR__ . '/../../..';
+        return __DIR__ . '/../../../..';
     }
 }
