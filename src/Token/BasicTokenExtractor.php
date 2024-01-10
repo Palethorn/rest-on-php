@@ -1,5 +1,5 @@
 <?php
-namespace ChromecastManagement\Token;
+namespace RestOnPhp\Token;
 
 use RestOnPhp\Token\TokenExtractorInterface;
 use Symfony\Component\HttpFoundation\Request;
