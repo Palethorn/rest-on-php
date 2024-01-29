@@ -330,7 +330,7 @@ class Kernel implements HttpKernelInterface {
             $response = new Response(json_encode([ 
                 'message' => 'Invalid input',
                 'exception_message' => $e->getMessage()
-            ], 'json'), 400);
+            ]), 400);
         } catch(UniqueConstraintViolationException $e) {
             $response = new Response(
                 json_encode([
