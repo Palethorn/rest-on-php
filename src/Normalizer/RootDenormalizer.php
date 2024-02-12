@@ -42,7 +42,10 @@ class RootDenormalizer {
             }
 
             $setter = 'set' . ucfirst($field['name']);
-            $object->$setter($value);
+            
+            if(method_exists($object, $setter)) {
+                $object->$setter($value);
+            }
         }
         
         return $object;
